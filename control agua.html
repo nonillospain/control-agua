@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Agua — Verdiales</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap');
+
+  :root {
+    --sand: #f0ebe0;
+    --sand2: #e4ddd0;
+    --sand3: #d8d0c4;
+    --ink: #1a1612;
+    --ink2: #3d3630;
+    --muted: #8a8078;
+    --water: #2d7dd2;
+    --water-light: #d6e8f7;
+    --garden: #3a9e6a;
+    --garden-light: #d4f0e2;
+    --home: #c0622a;
+    --home-light: #f7e0d4;
+    --warn: #d4a017;
+    --warn-light: #fdf3d0;
+    --danger: #c0392b;
+    --danger-light: #fde8e6;
+    --border: #cec5b8;
+    --summer: #e07020;
+    --summer-light: #fdebd8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--sand);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    color: var(--sand);
+    padding: 22px 20px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -50px; right: -50px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: var(--water);
+    opacity: 0.12;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -30px; right: 60px;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: var(--garden);
+    opacity: 0.08;
+  }
+  .header-eyebrow {
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.6rem;
+    font-weight: 300;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    margin-bottom: 14px;
+  }
+  header h1 span { color: var(--water); font-style: italic; }
+
+  .header-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .hdr-num {
+    font-size: 1.9rem;
+    font-weight: 500;
+    line-height: 1;
+  }
+  .hdr-label {
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* PROGRESS */
+  .progress-wrap {
+    background: var(--ink);
+    padding: 0 20px 16px;
+  }
+  .progress-track {
+    height: 5px;
+    background: #2a2a2a;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 5px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease, background 0.3s;
+  }
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.62rem;
+    color: var(--muted);
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    background: var(--ink2);
+    border-bottom: 1px solid #111;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    color: var(--sand);
+    border-bottom-color: var(--water);
+  }
+
+  main { padding: 16px; max-width: 520px; margin: 0 auto; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* MONTH BAR */
+  .month-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+  }
+  .month-bar button {
+    background: none; border: none; cursor: pointer;
+    font-size: 1.1rem; color: var(--ink2);
+    padding: 2px 8px; border-radius: 4px;
+    transition: background 0.15s;
+  }
+  .month-bar button:hover { background: var(--sand2); }
+  .month-name {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem; font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  /* ALERT */
+  .alert { border-radius: 8px; padding: 11px 14px; margin-bottom: 14px; font-size: 0.76rem; line-height: 1.5; display: none; }
+  .alert.warn { background: var(--warn-light); border: 1px solid #e8cc80; color: #7a5a00; }
+  .alert.danger { background: var(--danger-light); border: 1px solid #f0a0a0; color: var(--danger); }
+  .alert.summer { background: var(--summer-light); border: 1px solid #f0b080; color: #8a3a00; }
+  .alert.show { display: block; }
+
+  /* CARDS */
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* BASELINE */
+  .baseline-card {
+    background: #e8f4fd;
+    border: 1.5px solid #a8cff0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .baseline-card .card-title { color: var(--water); }
+  .baseline-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .baseline-field label {
+    display: block;
+    font-size: 0.6rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--water);
+    margin-bottom: 4px;
+  }
+  .baseline-field input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1.5px solid #a8cff0;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    background: white;
+    color: var(--ink);
+    -moz-appearance: textfield;
+  }
+  .baseline-field input::-webkit-outer-spin-button,
+  .baseline-field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .baseline-field input:focus { outline: none; border-color: var(--water); }
+  .baseline-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .btn-baseline {
+    flex: 1;
+    padding: 9px;
+    background: var(--water);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-baseline:hover { opacity: 0.85; }
+  .baseline-info {
+    margin-top: 8px;
+    font-size: 0.7rem;
+    color: var(--water);
+    line-height: 1.5;
+  }
+
+  /* COMPANY TRACKER */
+  .company-tracker {
+    background: #f0f8f0;
+    border: 1.5px solid #a8d8b8;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .company-tracker .card-title { color: var(--garden); }
+  .tracker-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .tracker-box {
+    background: white;
+    border: 1px solid #b8e0c8;
+    border-radius: 6px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .tracker-box .t-label {
+    font-size: 0.58rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--garden);
+    margin-bottom: 4px;
+  }
+  .tracker-box .t-val {
+    font-family: 'Fraunces', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .tracker-box .t-unit { font-size: 0.62rem; color: var(--muted); }
+
+  /* DAILY BUDGET */
+  .daily-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .d-box {
+    border-radius: 8px;
+    padding: 11px 8px;
+    text-align: center;
+    border: 1px solid transparent;
+  }
+  .d-box .d-label {
+    font-size: 0.56rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .d-box .d-val {
+    font-family: 'Fraunces', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .d-box .d-unit { font-size: 0.6rem; color: var(--muted); }
+  .d-box.allowed { background: var(--garden-light); border-color: #b0dfc8; }
+  .d-box.allowed .d-label { color: var(--garden); }
+  .d-box.garden-b { background: var(--garden-light); border-color: #b0dfc8; }
+  .d-box.garden-b .d-label { color: var(--garden); }
+  .d-box.home-b { background: var(--home-light); border-color: #e8c4b0; }
+  .d-box.home-b .d-label { color: var(--home); }
+  .d-box.total-b { background: var(--water-light); border-color: #b0cff0; }
+  .d-box.total-b .d-label { color: var(--water); }
+  .d-box.pace-ok { background: var(--garden-light); border-color: #b0dfc8; }
+  .d-box.pace-ok .d-label { color: var(--garden); }
+  .d-box.pace-warn { background: var(--warn-light); border-color: #e8cc80; }
+  .d-box.pace-warn .d-label { color: var(--warn); }
+  .d-box.pace-bad { background: var(--danger-light); border-color: #f0a0a0; }
+  .d-box.pace-bad .d-label { color: var(--danger); }
+  .d-box.neutral { background: var(--sand2); border-color: var(--border); }
+  .d-box.neutral .d-label { color: var(--muted); }
+
+  /* ENTRY */
+  .reading-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .reading-field label {
+    display: block;
+    font-size: 0.6rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .reading-field.garden label { color: var(--garden); }
+  .reading-field.home label { color: var(--home); }
+  .reading-field input {
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.95rem;
+    background: var(--sand);
+    color: var(--ink);
+    -moz-appearance: textfield;
+  }
+  .reading-field input::-webkit-outer-spin-button,
+  .reading-field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .reading-field.garden input:focus { outline: none; border-color: var(--garden); background: white; }
+  .reading-field.home input:focus { outline: none; border-color: var(--home); background: white; }
+
+  .date-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+  }
+  .date-row label {
+    font-size: 0.6rem; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted); white-space: nowrap;
+  }
+  .date-row input[type="date"] {
+    flex: 1; padding: 8px 10px;
+    border: 1.5px solid var(--border); border-radius: 6px;
+    font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    background: var(--sand); color: var(--ink);
+  }
+  .date-row input[type="date"]:focus { outline: none; border-color: var(--water); }
+
+  .reading-hint {
+    font-size: 0.66rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding: 7px 10px;
+    background: var(--sand2);
+    border-radius: 5px;
+    line-height: 1.5;
+  }
+
+  .btn-add {
+    width: 100%; padding: 11px;
+    background: var(--ink); color: var(--sand);
+    border: none; border-radius: 7px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem; letter-spacing: 1px;
+    cursor: pointer; transition: background 0.15s, transform 0.1s;
+  }
+  .btn-add:hover { background: var(--ink2); }
+  .btn-add:active { transform: scale(0.98); }
+
+  /* STATS GRID */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat-box { border-radius: 8px; padding: 13px; border: 1px solid transparent; }
+  .stat-box.garden { background: var(--garden-light); border-color: #b0dfc8; }
+  .stat-box.home { background: var(--home-light); border-color: #e8c4b0; }
+  .stat-box.total { background: var(--water-light); border-color: #b0cff0; }
+  .stat-box.remain { background: var(--sand2); border-color: var(--border); }
+  .stat-label { font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+  .stat-box.garden .stat-label { color: var(--garden); }
+  .stat-box.home .stat-label { color: var(--home); }
+  .stat-box.total .stat-label { color: var(--water); }
+  .stat-box.remain .stat-label { color: var(--muted); }
+  .stat-value { font-family: 'Fraunces', serif; font-size: 1.45rem; font-weight: 600; line-height: 1; }
+  .stat-unit { font-size: 0.65rem; color: var(--muted); margin-left: 2px; }
+  .stat-sub { font-size: 0.62rem; color: var(--muted); margin-top: 4px; }
+
+  /* PROJECTION */
+  .projection {
+    background: var(--sand2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 13px; margin-bottom: 14px; font-size: 0.74rem;
+  }
+  .projection-title {
+    font-size: 0.58rem; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  .proj-row {
+    display: flex; justify-content: space-between;
+    padding: 4px 0; border-bottom: 1px solid var(--border);
+  }
+  .proj-row:last-child { border-bottom: none; }
+  .proj-val { font-weight: 500; }
+  .proj-val.ok { color: var(--garden); }
+  .proj-val.warn { color: var(--warn); }
+  .proj-val.bad { color: var(--danger); }
+
+  /* LOG */
+  .log-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 10px;
+  }
+  .log-title { font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .btn-clear {
+    font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 1px;
+    background: none; border: 1px solid var(--border); border-radius: 5px;
+    color: var(--muted); padding: 4px 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-clear:hover { border-color: var(--danger); color: var(--danger); }
+
+  .log-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+  .log-table th {
+    text-align: left; padding: 6px 8px;
+    font-size: 0.58rem; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted);
+    border-bottom: 1.5px solid var(--border);
+  }
+  .log-table td { padding: 7px 8px; border-bottom: 1px solid var(--sand2); vertical-align: middle; }
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-table tr:hover td { background: var(--sand2); }
+
+  .tag {
+    display: inline-block; font-size: 0.58rem;
+    padding: 2px 6px; border-radius: 10px; font-weight: 500;
+  }
+  .tag.garden { background: var(--garden-light); color: var(--garden); }
+  .tag.home { background: var(--home-light); color: var(--home); }
+  .btn-del {
+    background: none; border: none; cursor: pointer;
+    color: var(--border); font-size: 0.8rem;
+    padding: 2px 4px; border-radius: 3px; transition: color 0.15s;
+  }
+  .btn-del:hover { color: var(--danger); }
+  .empty-log {
+    text-align: center; padding: 24px;
+    color: var(--muted); font-size: 0.75rem; font-style: italic;
+  }
+
+  /* HISTORY CHART */
+  .chart-wrap {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+    overflow-x: auto;
+  }
+  .chart-title {
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 120px;
+    padding-bottom: 24px;
+    position: relative;
+    min-width: 340px;
+  }
+  .chart-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    position: relative;
+  }
+  .chart-bar {
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    min-height: 3px;
+    transition: height 0.4s ease;
+    position: relative;
+  }
+  .chart-bar.summer-bar { background: var(--summer); }
+  .chart-bar.winter-bar { background: var(--water); opacity: 0.7; }
+  .chart-bar.current-bar { background: var(--garden); }
+  .chart-bar-label {
+    position: absolute;
+    bottom: -22px;
+    font-size: 0.52rem;
+    color: var(--muted);
+    white-space: nowrap;
+    text-align: center;
+    transform: rotate(-30deg);
+    transform-origin: top center;
+  }
+  .chart-val {
+    position: absolute;
+    top: -14px;
+    font-size: 0.55rem;
+    font-weight: 500;
+    color: var(--ink2);
+  }
+  .chart-legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+  }
+  .limit-line {
+    position: absolute;
+    left: 0; right: 0;
+    border-top: 1.5px dashed var(--danger);
+    opacity: 0.5;
+  }
+  .limit-label {
+    position: absolute;
+    right: 0;
+    font-size: 0.52rem;
+    color: var(--danger);
+    top: -12px;
+  }
+
+  /* EXPORT/IMPORT BUTTONS */
+  .btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .btn-action {
+    padding: 10px;
+    background: none;
+    border: 1.5px solid var(--ink);
+    border-radius: 7px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .btn-action:hover { background: var(--ink); color: var(--sand); }
+  .btn-action.csv { border-color: var(--garden); color: var(--garden); }
+  .btn-action.csv:hover { background: var(--garden); color: white; }
+  .btn-action.import-j { border-color: var(--water); color: var(--water); }
+  .btn-action.import-j:hover { background: var(--water); color: white; }
+
+  #file-input { display: none; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--ink); color: var(--sand);
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 0.76rem; transition: transform 0.3s ease;
+    pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .section-label {
+    font-size: 0.58rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">Aguas de los Verdiales · Contador 62093178</div>
+  <h1>Control <span>10.000 L</span>/mes</h1>
+  <div class="header-stats">
+    <div>
+      <div class="hdr-num" id="hdr-remaining">—</div>
+      <div class="hdr-label">litros restantes</div>
+    </div>
+    <div>
+      <div class="hdr-num" id="hdr-daily">333</div>
+      <div class="hdr-label">L/día disponibles</div>
+    </div>
+  </div>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width:0%;background:#3a9e6a;"></div>
+  </div>
+  <div class="progress-labels">
+    <span id="prog-used">0 L usados (0,0%)</span>
+    <span>cuota: 10.000 L/mes</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('registro')">📋 Registro</button>
+  <button class="tab-btn" onclick="switchTab('historial')">📊 Historial</button>
+  <button class="tab-btn" onclick="switchTab('datos')">⚙️ Datos</button>
+</div>
+
+<main>
+
+<!-- ═══════════ TAB: REGISTRO ═══════════ -->
+<div class="tab-panel active" id="tab-registro">
+
+  <br>
+  <div class="month-bar">
+    <button onclick="changeMonth(-1)">‹</button>
+    <span class="month-name" id="month-label"></span>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+
+  <div class="alert" id="alert-summer"></div>
+  <div class="alert" id="alert-box"></div>
+
+  <!-- DAILY -->
+  <div class="section-label">Hoy</div>
+  <div class="daily-grid">
+    <div class="d-box garden-b">
+      <div class="d-label">🌿 Jardín</div>
+      <div class="d-val" id="val-today-g">—<span class="d-unit"> L</span></div>
+    </div>
+    <div class="d-box home-b">
+      <div class="d-label">🏠 Domést.</div>
+      <div class="d-val" id="val-today-h">—<span class="d-unit"> L</span></div>
+    </div>
+    <div class="d-box total-b">
+      <div class="d-label">Total</div>
+      <div class="d-val" id="val-today-total">—<span class="d-unit"> L</span></div>
+    </div>
+  </div>
+  <div class="daily-grid">
+    <div class="d-box allowed">
+      <div class="d-label">Máx/día</div>
+      <div class="d-val">333<span class="d-unit"> L</span></div>
+    </div>
+    <div class="d-box" id="box-pace">
+      <div class="d-label" id="pace-label">Ritmo</div>
+      <div class="d-val" id="val-pace">—</div>
+    </div>
+    <div class="d-box neutral">
+      <div class="d-label">Media</div>
+      <div class="d-val" id="val-avg">—<span class="d-unit"> L</span></div>
+    </div>
+  </div>
+
+  <!-- ENTRY -->
+  <div class="card">
+    <div class="card-title">Nueva lectura del contador</div>
+    <div class="reading-hint" id="reading-hint">
+      💡 Introduce el valor del contador en m³. La app calcula la diferencia automáticamente.
+    </div>
+    <div class="date-row">
+      <label>Fecha</label>
+      <input type="date" id="inp-date">
+    </div>
+    <div class="reading-row">
+      <div class="reading-field garden">
+        <label>🌿 09:30h Jardín</label>
+        <input type="number" id="inp-garden" placeholder="m³ contador" step="0.001" min="0">
+      </div>
+      <div class="reading-field home">
+        <label>🏠 00:00h Domést.</label>
+        <input type="number" id="inp-home" placeholder="m³ contador" step="0.001" min="0">
+      </div>
+    </div>
+    <button class="btn-add" onclick="addReading()">Guardar lectura</button>
+  </div>
+
+  <!-- MONTHLY STATS -->
+  <div class="section-label">Acumulado del mes</div>
+  <div class="stats-grid">
+    <div class="stat-box garden">
+      <div class="stat-label">🌿 Jardín</div>
+      <div class="stat-value" id="stat-garden">0<span class="stat-unit">L</span></div>
+      <div class="stat-sub" id="stat-garden-pct">— % del total</div>
+    </div>
+    <div class="stat-box home">
+      <div class="stat-label">🏠 Doméstico</div>
+      <div class="stat-value" id="stat-home">0<span class="stat-unit">L</span></div>
+      <div class="stat-sub" id="stat-home-pct">— % del total</div>
+    </div>
+    <div class="stat-box total">
+      <div class="stat-label">Total consumido</div>
+      <div class="stat-value" id="stat-total">0<span class="stat-unit">L</span></div>
+      <div class="stat-sub" id="stat-days">0 días registrados</div>
+    </div>
+    <div class="stat-box remain">
+      <div class="stat-label">Restante cuota</div>
+      <div class="stat-value" id="stat-remain">10.000<span class="stat-unit">L</span></div>
+      <div class="stat-sub" id="stat-daily-budget">máx. 333 L/día</div>
+    </div>
+  </div>
+
+  <!-- PROJECTION -->
+  <div class="projection" id="projection-box" style="display:none">
+    <div class="projection-title">Proyección a fin de mes</div>
+    <div class="proj-row"><span>Días restantes</span><span class="proj-val" id="proj-days-left">—</span></div>
+    <div class="proj-row"><span>Consumo proyectado total</span><span class="proj-val" id="proj-total">— L</span></div>
+    <div class="proj-row"><span>Margen sobre cuota</span><span class="proj-val" id="proj-margin">— L</span></div>
+    <div class="proj-row"><span>Máximo diario recomendado</span><span class="proj-val" id="proj-max-day">— L/día</span></div>
+  </div>
+
+  <!-- LOG -->
+  <div class="log-header">
+    <span class="log-title">Registro del mes</span>
+    <button class="btn-clear" onclick="clearMonth()">Borrar mes</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table class="log-table">
+      <thead><tr><th>Día</th><th>Jardín</th><th>Domést.</th><th>Total</th><th></th></tr></thead>
+      <tbody id="log-body">
+        <tr><td colspan="5" class="empty-log">Sin registros aún.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ═══════════ TAB: HISTORIAL ═══════════ -->
+<div class="tab-panel" id="tab-historial">
+  <br>
+
+  <!-- COMPANY READING TRACKER -->
+  <div class="company-tracker">
+    <div class="card-title">📍 Seguimiento desde última factura</div>
+    <p style="font-size:0.72rem;color:#3a7a5a;line-height:1.5;">Última lectura de la compañía: <strong id="company-reading-display">249 m³</strong> (Jun 2026). Consumo desde entonces:</p>
+    <div class="tracker-grid" style="margin-top:10px;">
+      <div class="tracker-box">
+        <div class="t-label">Consumido</div>
+        <div class="t-val" id="track-consumed">—<span class="t-unit"> m³</span></div>
+      </div>
+      <div class="tracker-box">
+        <div class="t-label">En litros</div>
+        <div class="t-val" id="track-liters">—<span class="t-unit"> L</span></div>
+      </div>
+      <div class="tracker-box">
+        <div class="t-label">Est. factura</div>
+        <div class="t-val" id="track-bill">—<span class="t-unit"> €</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORICAL CHART -->
+  <div class="chart-wrap">
+    <div class="chart-title">Consumo histórico trimestral (m³) — Aguas de los Verdiales</div>
+    <div class="chart-bars" id="hist-chart"></div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--summer)"></div>Verano (Jul–Sep)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--water);opacity:0.7"></div>Resto del año</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--garden)"></div>Mes actual</div>
+    </div>
+  </div>
+
+  <!-- SEASONAL STATS -->
+  <div class="card">
+    <div class="card-title">Análisis estacional</div>
+    <div style="font-size:0.74rem;line-height:1.8;color:var(--ink2);">
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sand2);padding:4px 0;">
+        <span>Consumo medio trimestre verano</span><span style="font-weight:500;color:var(--summer)">18 m³</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sand2);padding:4px 0;">
+        <span>Consumo medio resto del año</span><span style="font-weight:500;color:var(--water)">9 m³</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sand2);padding:4px 0;">
+        <span>Pico máximo registrado</span><span style="font-weight:500;color:var(--danger)">26 m³ (Jul-Sep 2021)</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;">
+        <span>Cuota mensual equivale a</span><span style="font-weight:500;color:var(--garden)">30 m³/trimestre</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ TAB: DATOS ═══════════ -->
+<div class="tab-panel" id="tab-datos">
+  <br>
+
+  <!-- BASELINE -->
+  <div class="baseline-card">
+    <div class="card-title">📍 Lectura inicial del mes</div>
+    <p style="font-size:0.72rem;color:#4a7aaa;line-height:1.5;">Valor del contador al inicio del mes. Todos los consumos se calculan como diferencia desde este punto.</p>
+    <div class="baseline-grid">
+      <div class="baseline-field">
+        <label>Lectura inicial (m³)</label>
+        <input type="number" id="inp-baseline" placeholder="Ej: 249.000" step="0.001" min="0">
+      </div>
+      <div class="baseline-field">
+        <label>Fecha inicio</label>
+        <input type="date" id="inp-baseline-date">
+      </div>
+    </div>
+    <div class="baseline-actions">
+      <button class="btn-baseline" onclick="setBaseline()">Fijar lectura inicial</button>
+    </div>
+    <div class="baseline-info" id="baseline-info">Sin lectura inicial — fija una para empezar.</div>
+  </div>
+
+  <!-- COMPANY READING -->
+  <div class="card">
+    <div class="card-title">🏢 Última lectura de la compañía</div>
+    <p style="font-size:0.72rem;color:var(--muted);line-height:1.5;margin-bottom:10px;">Para calcular el consumo acumulado desde la última factura y estimar el importe.</p>
+    <div class="reading-row">
+      <div class="reading-field garden">
+        <label>Lectura factura (m³)</label>
+        <input type="number" id="inp-company-reading" placeholder="Ej: 249" step="0.001" min="0">
+      </div>
+      <div class="reading-field home">
+        <label>Precio agua (€/m³)</label>
+        <input type="number" id="inp-price" placeholder="0.622" step="0.001" min="0" value="0.622">
+      </div>
+    </div>
+    <button class="btn-add" style="background:var(--garden)" onclick="setCompanyReading()">Guardar lectura compañía</button>
+    <div style="font-size:0.68rem;color:var(--muted);margin-top:8px;" id="company-info">Lectura actual: 249 m³ (Jun 2026)</div>
+  </div>
+
+  <!-- JSON IMPORT/EXPORT -->
+  <div class="card">
+    <div class="card-title">💾 Copia de seguridad completa (JSON)</div>
+    <p style="font-size:0.72rem;color:var(--muted);line-height:1.5;margin-bottom:12px;">Exporta todos tus datos para guardarlos o importarlos en una versión actualizada de la app sin perder nada.</p>
+    <div class="btn-row">
+      <button class="btn-action import-j" onclick="exportJSON()">⬇ Exportar JSON</button>
+      <button class="btn-action import-j" onclick="document.getElementById('file-input').click()">⬆ Importar JSON</button>
+    </div>
+    <input type="file" id="file-input" accept=".json" onchange="importJSON(event)">
+  </div>
+
+  <!-- CSV EXPORT -->
+  <div class="card">
+    <div class="card-title">📄 Exportar datos</div>
+    <div class="btn-row">
+      <button class="btn-action csv" onclick="exportCSV()">⬇ CSV este mes</button>
+      <button class="btn-action csv" onclick="exportCSVAll()">⬇ CSV histórico</button>
+    </div>
+  </div>
+
+</div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── HISTORICAL DATA (from invoices) ──
+const HISTORY = [
+  {period:'Ene-Mar 21', m3:2, summer:false},
+  {period:'Abr-Jun 21', m3:5, summer:false},
+  {period:'Jul-Sep 21', m3:26, summer:true},
+  {period:'Oct-Dic 21', m3:10, summer:false},
+  {period:'Ene-Mar 22', m3:7, summer:false},
+  {period:'Abr-Jun 22', m3:7, summer:false},
+  {period:'Jul-Sep 22', m3:17, summer:true},
+  {period:'Oct-Dic 22', m3:11, summer:false},
+  {period:'Ene-Mar 23', m3:4, summer:false},
+  {period:'Abr-Jun 23', m3:9, summer:false},
+  {period:'Jul-Sep 23', m3:13, summer:true},
+  {period:'Oct-Dic 23', m3:12, summer:false},
+  {period:'Ene-Mar 24', m3:13, summer:false},
+  {period:'Abr-Jun 24', m3:8, summer:false},
+  {period:'Jul-Sep 24', m3:17, summer:true},
+  {period:'Oct-Dic 24', m3:9, summer:false},
+  {period:'Ene-Mar 25', m3:7, summer:false},
+  {period:'Abr-Jun 25', m3:17, summer:false},
+  {period:'Jul-Sep 25', m3:21, summer:true},
+  {period:'Oct-Dic 25', m3:7, summer:false},
+  {period:'Ene-Mar 26', m3:11, summer:false},
+  {period:'Abr-Jun 26', m3:11, summer:false},
+];
+
+const QUOTA = 10000;
+const DAILY_MAX = 333;
+let currentYear, currentMonth;
+
+// ── STORAGE ──
+function storageKey(suffix) {
+  return `agua_${currentYear}_${String(currentMonth+1).padStart(2,'0')}_${suffix}`;
+}
+function loadEntries() {
+  try { return JSON.parse(localStorage.getItem(storageKey('entries')) || '[]'); } catch(e) { return []; }
+}
+function saveEntries(arr) { localStorage.setItem(storageKey('entries'), JSON.stringify(arr)); }
+function loadBaseline() {
+  const r = localStorage.getItem(storageKey('baseline'));
+  return r !== null ? parseFloat(r) : null;
+}
+function saveBaseline(v) { localStorage.setItem(storageKey('baseline'), String(v)); }
+function loadCompanyReading() {
+  try { return JSON.parse(localStorage.getItem('agua_company') || 'null'); } catch(e) { return null; }
+}
+function saveCompanyReading(obj) { localStorage.setItem('agua_company', JSON.stringify(obj)); }
+
+// ── UTILS ──
+function fmt(n) { return Math.round(n).toLocaleString('es-ES'); }
+function fmtD(n) { return n.toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function isSummerMonth(m) { return m >= 5 && m <= 8; } // Jun-Sep (0-indexed)
+
+// ── INIT ──
+function init() {
+  const now = new Date();
+  currentYear = now.getFullYear();
+  currentMonth = now.getMonth();
+  document.getElementById('inp-date').value = now.toISOString().slice(0,10);
+  document.getElementById('inp-baseline-date').value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+
+  // Load company reading defaults
+  const cr = loadCompanyReading();
+  if (!cr) saveCompanyReading({reading: 249, label: 'Jun 2026', price: 0.622});
+
+  renderAll();
+  renderChart();
+}
+
+function renderAll() {
+  renderHeader();
+  renderRegistro();
+  renderHistorial();
+  renderDatos();
+}
+
+// ── TABS ──
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'historial') renderChart();
+}
+
+// ── MONTH ──
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderAll();
+}
+
+// ── RENDER HEADER ──
+function renderHeader() {
+  const entries = loadEntries();
+  let totalG = 0, totalH = 0;
+  entries.forEach(e => { totalG += e.garden; totalH += e.home; });
+  const total = totalG + totalH;
+  const remaining = QUOTA - total;
+  const pct = Math.min(100, total / QUOTA * 100);
+
+  const fill = document.getElementById('progress-fill');
+  fill.style.width = pct + '%';
+  fill.style.background = pct < 60 ? '#3a9e6a' : pct < 85 ? '#d4a017' : '#c0392b';
+  document.getElementById('prog-used').textContent = `${fmt(total)} L usados (${fmtD(pct)}%)`;
+
+  const now = new Date();
+  const isCurrentMonth = now.getFullYear() === currentYear && now.getMonth() === currentMonth;
+  const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+  const daysLeft = isCurrentMonth ? daysInMonth - now.getDate() : 0;
+  const dailyMax = daysLeft > 0 ? Math.max(0, Math.round(remaining / daysLeft)) : DAILY_MAX;
+
+  document.getElementById('hdr-remaining').textContent = fmt(Math.max(0, remaining));
+  document.getElementById('hdr-daily').textContent = fmt(dailyMax);
+}
+
+// ── RENDER REGISTRO ──
+function renderRegistro() {
+  const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('month-label').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+
+  const baseline = loadBaseline();
+  const entries = loadEntries();
+  const now = new Date();
+  const isCurrentMonth = now.getFullYear() === currentYear && now.getMonth() === currentMonth;
+
+  // Hint
+  document.getElementById('reading-hint').textContent = baseline !== null
+    ? `💡 Lectura inicial: ${baseline.toFixed(3)} m³. Introduce el valor actual del contador.`
+    : '⚠️ Ve a ⚙️ Datos y fija la lectura inicial del contador para este mes.';
+
+  let totalG = 0, totalH = 0;
+  entries.forEach(e => { totalG += e.garden; totalH += e.home; });
+  const total = totalG + totalH;
+  const remaining = QUOTA - total;
+  const pct = Math.min(100, total / QUOTA * 100);
+
+  // Summer alert
+  const summerAlert = document.getElementById('alert-summer');
+  if (isSummerMonth(currentMonth) && isCurrentMonth) {
+    summerAlert.className = 'alert summer show';
+    summerAlert.textContent = '☀️ Mes de verano — históricamente tu consumo sube un 80%. Histórico Jul-Sep: 13–26 m³. Controla el riego.';
+  } else {
+    summerAlert.className = 'alert';
+  }
+
+  // Quota alert
+  const alertBox = document.getElementById('alert-box');
+  alertBox.className = 'alert';
+  if (pct >= 100) {
+    alertBox.className = 'alert danger show';
+    alertBox.textContent = '⛔ Has superado la cuota de 10.000 L. El exceso tiene tarifa mayor.';
+  } else if (pct >= 85) {
+    alertBox.className = 'alert danger show';
+    alertBox.textContent = `⚠️ Llevas ${fmt(total)} L (${fmtD(pct)}%). Solo quedan ${fmt(remaining)} L.`;
+  } else if (pct >= 65) {
+    alertBox.className = 'alert warn show';
+    alertBox.textContent = `📊 Llevas el ${fmtD(pct)}% de la cuota. Quedan ${fmt(remaining)} L.`;
+  }
+
+  // Today
+  const todayStr = now.toISOString().slice(0,10);
+  const todayEntry = entries.find(e => e.date === todayStr);
+  if (todayEntry && isCurrentMonth) {
+    const tt = todayEntry.garden + todayEntry.home;
+    document.getElementById('val-today-g').innerHTML = `${fmt(todayEntry.garden)}<span class="d-unit"> L</span>`;
+    document.getElementById('val-today-h').innerHTML = `${fmt(todayEntry.home)}<span class="d-unit"> L</span>`;
+    document.getElementById('val-today-total').innerHTML = `${fmt(tt)}<span class="d-unit"> L</span>`;
+    const diff = tt - DAILY_MAX;
+    const pb = document.getElementById('box-pace');
+    const pl = document.getElementById('pace-label');
+    const pv = document.getElementById('val-pace');
+    if (diff <= 0) {
+      pb.className = 'd-box pace-ok'; pl.textContent = 'Ritmo';
+      pv.innerHTML = `OK <span style="font-size:0.65rem">✓</span>`;
+    } else {
+      pb.className = 'd-box pace-bad'; pl.textContent = 'Exceso';
+      pv.innerHTML = `+${fmt(diff)}<span class="d-unit"> L</span>`;
+    }
+  } else {
+    ['val-today-g','val-today-h','val-today-total'].forEach(id => {
+      document.getElementById(id).innerHTML = `—<span class="d-unit"> L</span>`;
+    });
+    document.getElementById('box-pace').className = 'd-box neutral';
+    document.getElementById('pace-label').textContent = 'Ritmo';
+    document.getElementById('val-pace').textContent = '—';
+  }
+
+  const avgDay = entries.length > 0 ? total / entries.length : 0;
+  document.getElementById('val-avg').innerHTML = `${fmt(avgDay)}<span class="d-unit"> L</span>`;
+
+  // Stats
+  document.getElementById('stat-garden').innerHTML = `${fmt(totalG)}<span class="stat-unit">L</span>`;
+  document.getElementById('stat-home').innerHTML = `${fmt(totalH)}<span class="stat-unit">L</span>`;
+  document.getElementById('stat-total').innerHTML = `${fmt(total)}<span class="stat-unit">L</span>`;
+  document.getElementById('stat-remain').innerHTML = `${fmt(Math.max(0,remaining))}<span class="stat-unit">L</span>`;
+  document.getElementById('stat-days').textContent = `${entries.length} día${entries.length!==1?'s':''} registrado${entries.length!==1?'s':''}`;
+  document.getElementById('stat-garden-pct').textContent = total > 0 ? `${(totalG/total*100).toFixed(0)}% del total` : '— % del total';
+  document.getElementById('stat-home-pct').textContent = total > 0 ? `${(totalH/total*100).toFixed(0)}% del total` : '— % del total';
+
+  const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+  const daysLeft = isCurrentMonth ? daysInMonth - now.getDate() : 0;
+  const dailyBudget = daysLeft > 0 ? Math.max(0, Math.round(remaining / daysLeft)) : DAILY_MAX;
+  document.getElementById('stat-daily-budget').textContent = `máx. ${fmt(dailyBudget)} L/día`;
+
+  // Projection
+  const projBox = document.getElementById('projection-box');
+  if (entries.length >= 2 && avgDay > 0 && isCurrentMonth && daysLeft > 0) {
+    projBox.style.display = 'block';
+    const projected = total + avgDay * daysLeft;
+    const margin = QUOTA - projected;
+    document.getElementById('proj-days-left').textContent = daysLeft;
+    document.getElementById('proj-total').textContent = `${fmt(projected)} L`;
+    document.getElementById('proj-margin').textContent = `${margin>=0?'+':''}${fmt(margin)} L`;
+    document.getElementById('proj-max-day').textContent = `${fmt(Math.max(0,dailyBudget))} L/día`;
+    document.getElementById('proj-total').className = 'proj-val ' + (projected<QUOTA*0.9?'ok':projected<QUOTA?'warn':'bad');
+    document.getElementById('proj-margin').className = 'proj-val ' + (margin>500?'ok':margin>0?'warn':'bad');
+    document.getElementById('proj-max-day').className = 'proj-val ' + (dailyBudget>250?'ok':dailyBudget>100?'warn':'bad');
+  } else {
+    projBox.style.display = 'none';
+  }
+
+  // Log
+  const tbody = document.getElementById('log-body');
+  if (entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-log">Sin registros este mes.</td></tr>';
+  } else {
+    const sorted = [...entries].sort((a,b)=>b.date.localeCompare(a.date));
+    tbody.innerHTML = sorted.map(e => {
+      const idx = entries.indexOf(e);
+      const tt = e.garden + e.home;
+      const over = tt > DAILY_MAX;
+      return `<tr>
+        <td>${e.date.slice(8)+'/'+(parseInt(e.date.slice(5,7)))}</td>
+        <td><span class="tag garden">${fmt(e.garden)}</span></td>
+        <td><span class="tag home">${fmt(e.home)}</span></td>
+        <td style="font-weight:600;color:${over?'var(--danger)':'inherit'}">${fmt(tt)}${over?' ⚠':''}</td>
+        <td><button class="btn-del" onclick="deleteEntry(${idx})">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ── RENDER HISTORIAL ──
+function renderHistorial() {
+  const cr = loadCompanyReading() || {reading:249,label:'Jun 2026',price:0.622};
+  document.getElementById('company-reading-display').textContent = `${cr.reading} m³`;
+
+  // Current counter reading (latest entry's _counterHome across all months)
+  let latestCounter = null;
+  for (let m = 0; m <= 11; m++) {
+    const key = `agua_${currentYear}_${String(m+1).padStart(2,'0')}_entries`;
+    try {
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.forEach(e => {
+        if (e._counterHome && (latestCounter === null || e._counterHome > latestCounter))
+          latestCounter = e._counterHome;
+      });
+    } catch(e) {}
+  }
+
+  if (latestCounter !== null && latestCounter > cr.reading) {
+    const consumed = latestCounter - cr.reading;
+    const liters = Math.round(consumed * 1000);
+    const cuotaServicio = 11.97;
+    const billEst = (cuotaServicio + consumed * cr.price) * 1.10;
+    document.getElementById('track-consumed').innerHTML = `${consumed.toFixed(2)}<span class="t-unit"> m³</span>`;
+    document.getElementById('track-liters').innerHTML = `${fmt(liters)}<span class="t-unit"> L</span>`;
+    document.getElementById('track-bill').innerHTML = `${billEst.toFixed(0)}<span class="t-unit"> €</span>`;
+  } else {
+    ['track-consumed','track-liters','track-bill'].forEach(id => {
+      document.getElementById(id).innerHTML = `—`;
+    });
+  }
+}
+
+// ── RENDER CHART ──
+function renderChart() {
+  const container = document.getElementById('hist-chart');
+  if (!container) return;
+
+  const maxM3 = Math.max(...HISTORY.map(h=>h.m3), 30);
+  const heightPx = 96; // usable bar height in px
+
+  // Limit line at 30m3 (quarterly quota)
+  const limitPct = (30 / maxM3) * 100;
+
+  let html = `<div class="limit-line" style="bottom:${(30/maxM3)*heightPx}px">
+    <span class="limit-label">30 m³ cuota</span>
+  </div>`;
+
+  HISTORY.forEach((h, i) => {
+    const barH = Math.max(3, (h.m3 / maxM3) * heightPx);
+    const cls = h.summer ? 'summer-bar' : 'winter-bar';
+    html += `<div class="chart-bar-wrap">
+      <span class="chart-val">${h.m3}</span>
+      <div class="chart-bar ${cls}" style="height:${barH}px"></div>
+      <span class="chart-bar-label">${h.period.replace(' ','<br>')}</span>
+    </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+// ── RENDER DATOS ──
+function renderDatos() {
+  const baseline = loadBaseline();
+  const cr = loadCompanyReading() || {reading:249,label:'Jun 2026',price:0.622};
+  document.getElementById('baseline-info').textContent = baseline !== null
+    ? `✓ Lectura inicial: ${baseline.toFixed(3)} m³`
+    : 'Sin lectura inicial — fija una para empezar.';
+  document.getElementById('company-info').textContent = `Lectura actual: ${cr.reading} m³ (${cr.label})`;
+  if (document.getElementById('inp-price').value === '') {
+    document.getElementById('inp-price').value = cr.price;
+  }
+}
+
+// ── ACTIONS ──
+function setBaseline() {
+  const val = parseFloat(document.getElementById('inp-baseline').value);
+  if (isNaN(val) || val < 0) return showToast('Valor no válido');
+  saveBaseline(val);
+  document.getElementById('inp-baseline').value = '';
+  renderAll();
+  showToast('Lectura inicial guardada ✓');
+}
+
+function setCompanyReading() {
+  const reading = parseFloat(document.getElementById('inp-company-reading').value);
+  const price = parseFloat(document.getElementById('inp-price').value) || 0.622;
+  if (isNaN(reading) || reading < 0) return showToast('Lectura no válida');
+  const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const now = new Date();
+  saveCompanyReading({reading, label: `${MONTHS[now.getMonth()]} ${now.getFullYear()}`, price});
+  document.getElementById('inp-company-reading').value = '';
+  renderAll();
+  showToast('Lectura de compañía guardada ✓');
+}
+
+function addReading() {
+  const baseline = loadBaseline();
+  if (baseline === null) return showToast('Fija la lectura inicial en ⚙️ Datos');
+  const dateVal = document.getElementById('inp-date').value;
+  const gardenRaw = document.getElementById('inp-garden').value;
+  const homeRaw = document.getElementById('inp-home').value;
+  if (!dateVal) return showToast('Indica la fecha');
+  if (gardenRaw === '' || homeRaw === '') return showToast('Introduce ambas lecturas');
+  const [y,m] = dateVal.split('-').map(Number);
+  if (y !== currentYear || m-1 !== currentMonth) return showToast('Fecha fuera del mes actual');
+  const gardenM3 = parseFloat(gardenRaw);
+  const homeM3 = parseFloat(homeRaw);
+  if (isNaN(gardenM3) || isNaN(homeM3) || gardenM3 < 0 || homeM3 < 0) return showToast('Valores no válidos');
+  if (homeM3 < gardenM3) return showToast('Lectura medianoche debe ser ≥ lectura 09:30');
+
+  const entries = loadEntries();
+  const sorted = [...entries].sort((a,b)=>a.date.localeCompare(b.date));
+  const prev = sorted.filter(e=>e.date < dateVal).pop();
+  const prevHomeM3 = prev ? prev._counterHome : baseline;
+  if (gardenM3 < prevHomeM3) return showToast(`Lectura jardín (${gardenM3}) menor que anterior (${prevHomeM3.toFixed(3)})`);
+
+  const gardenL = Math.max(0, Math.round((gardenM3 - prevHomeM3) * 1000));
+  const homeL = Math.max(0, Math.round((homeM3 - gardenM3) * 1000));
+  const newEntry = {date:dateVal, garden:gardenL, home:homeL, _counterGarden:gardenM3, _counterHome:homeM3};
+
+  const existing = entries.findIndex(e=>e.date===dateVal);
+  if (existing >= 0) { entries[existing] = newEntry; showToast('Lectura actualizada ✓'); }
+  else { entries.push(newEntry); showToast('Lectura guardada ✓'); }
+  saveEntries(entries);
+  document.getElementById('inp-garden').value = '';
+  document.getElementById('inp-home').value = '';
+  renderAll();
+}
+
+function deleteEntry(idx) {
+  const entries = loadEntries();
+  entries.splice(idx, 1);
+  saveEntries(entries);
+  renderAll();
+  showToast('Registro eliminado');
+}
+
+function clearMonth() {
+  if (!confirm('¿Borrar registros de este mes? La lectura inicial se conserva.')) return;
+  localStorage.removeItem(storageKey('entries'));
+  renderAll();
+  showToast('Mes borrado');
+}
+
+// ── EXPORT/IMPORT JSON ──
+function exportJSON() {
+  const allData = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('agua_')) allData[key] = localStorage.getItem(key);
+  }
+  const blob = new Blob([JSON.stringify(allData, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `control_agua_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('JSON exportado ✓');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      const count = Object.keys(data).length;
+      if (!confirm(`¿Importar ${count} registros? Esto sobreescribirá los datos actuales.`)) return;
+      Object.entries(data).forEach(([k,v]) => localStorage.setItem(k, v));
+      renderAll();
+      showToast(`${count} registros importados ✓`);
+    } catch(err) {
+      showToast('Error al leer el archivo JSON');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ── EXPORT CSV ──
+function exportCSV() {
+  const entries = loadEntries();
+  if (entries.length === 0) return showToast('No hay datos este mes');
+  const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  let csv = `Control Agua - ${MONTHS[currentMonth]} ${currentYear}\n`;
+  csv += 'Fecha;Lectura jardín (m³);Lectura domést. (m³);Jardín (L);Doméstico (L);Total (L)\n';
+  [...entries].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e => {
+    csv += `${e.date};${e._counterGarden?.toFixed(3)||'—'};${e._counterHome?.toFixed(3)||'—'};${e.garden};${e.home};${e.garden+e.home}\n`;
+  });
+  download(csv, `agua_${MONTHS[currentMonth]}_${currentYear}.csv`, 'text/csv');
+}
+
+function exportCSVAll() {
+  let csv = 'Año;Mes;Fecha;Jardín (L);Doméstico (L);Total (L)\n';
+  for (let y = 2021; y <= new Date().getFullYear(); y++) {
+    for (let m = 0; m <= 11; m++) {
+      const key = `agua_${y}_${String(m+1).padStart(2,'0')}_entries`;
+      try {
+        const arr = JSON.parse(localStorage.getItem(key) || '[]');
+        arr.sort((a,b)=>a.date.localeCompare(b.date)).forEach(e => {
+          csv += `${y};${m+1};${e.date};${e.garden};${e.home};${e.garden+e.home}\n`;
+        });
+      } catch(err) {}
+    }
+  }
+  download(csv, `agua_historico_${new Date().getFullYear()}.csv`, 'text/csv');
+  showToast('CSV histórico descargado ✓');
+}
+
+function download(content, filename, type) {
+  const blob = new Blob([content], {type});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+init();
+</script>
+</body>
+</html>

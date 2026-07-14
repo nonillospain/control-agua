@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Agua — Verdiales</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap');
+
+  :root {
+    --sand:#f0ebe0; --sand2:#e4ddd0; --sand3:#d8d0c4;
+    --ink:#1a1612; --ink2:#3d3630; --muted:#8a8078;
+    --water:#2d7dd2; --water-light:#d6e8f7;
+    --garden:#3a9e6a; --garden-light:#d4f0e2;
+    --home:#c0622a; --home-light:#f7e0d4;
+    --warn:#d4a017; --warn-light:#fdf3d0;
+    --danger:#c0392b; --danger-light:#fde8e6;
+    --border:#cec5b8; --summer:#e07020; --summer-light:#fdebd8;
+    --saving:#7b4ea6; --saving-light:#f0e8f8;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--sand); color:var(--ink); font-family:'DM Mono',monospace; min-height:100vh; padding-bottom:60px; }
+
+  /* HEADER */
+  header { background:var(--ink); color:var(--sand); padding:20px 20px 16px; position:relative; overflow:hidden; }
+  header::before { content:''; position:absolute; top:-50px; right:-50px; width:180px; height:180px; border-radius:50%; background:var(--water); opacity:0.12; }
+  .header-eyebrow { font-size:0.58rem; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  header h1 { font-family:'Fraunces',serif; font-size:1.5rem; font-weight:300; margin-bottom:12px; }
+  header h1 span { color:var(--water); font-style:italic; }
+  .header-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .hdr-num { font-size:1.5rem; font-weight:500; line-height:1; }
+  .hdr-label { font-size:0.56rem; color:var(--muted); letter-spacing:1px; margin-top:2px; }
+  .hdr-saving { color:#c9a0f0; }
+
+  .progress-wrap { background:var(--ink); padding:0 20px 14px; }
+  .progress-track { height:5px; background:#2a2a2a; border-radius:3px; overflow:hidden; margin-bottom:4px; }
+  .progress-fill { height:100%; border-radius:3px; transition:width 0.6s ease, background 0.3s; }
+  .progress-labels { display:flex; justify-content:space-between; font-size:0.6rem; color:var(--muted); }
+
+  /* TABS */
+  .tabs { display:flex; background:var(--ink2); border-bottom:1px solid #111; }
+  .tab-btn { flex:1; padding:9px 2px; font-family:'DM Mono',monospace; font-size:0.58rem; letter-spacing:1px; text-transform:uppercase; background:none; border:none; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; }
+  .tab-btn.active { color:var(--sand); border-bottom-color:var(--water); }
+
+  main { padding:14px; max-width:520px; margin:0 auto; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  .month-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; background:white; border:1px solid var(--border); border-radius:8px; padding:8px 14px; }
+  .month-bar button { background:none; border:none; cursor:pointer; font-size:1.1rem; color:var(--ink2); padding:2px 8px; border-radius:4px; }
+  .month-name { font-family:'Fraunces',serif; font-size:1rem; font-weight:600; text-transform:capitalize; }
+
+  .alert { border-radius:8px; padding:10px 13px; margin-bottom:12px; font-size:0.74rem; line-height:1.5; display:none; }
+  .alert.warn { background:var(--warn-light); border:1px solid #e8cc80; color:#7a5a00; }
+  .alert.danger { background:var(--danger-light); border:1px solid #f0a0a0; color:var(--danger); }
+  .alert.summer { background:var(--summer-light); border:1px solid #f0b080; color:#8a3a00; }
+  .alert.info { background:var(--water-light); border:1px solid #a8cff0; color:#1a4a8a; }
+  .alert.show { display:block; }
+
+  .card { background:white; border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px; }
+  .card-title { font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+
+  /* TERMÓMETRO TRIMESTRAL */
+  .thermo-card { background:white; border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px; }
+  .thermo-card .card-title { color:var(--garden); }
+  .thermo-wrap { display:flex; align-items:stretch; gap:12px; margin-top:4px; }
+  .thermo-tube { width:28px; flex-shrink:0; background:#f0f0f0; border-radius:14px; position:relative; height:120px; overflow:hidden; border:1.5px solid var(--border); }
+  .thermo-fill { position:absolute; bottom:0; left:0; right:0; border-radius:0 0 12px 12px; transition:height 0.8s ease, background 0.5s; }
+  .thermo-bulb { position:absolute; bottom:-2px; left:50%; transform:translateX(-50%); width:22px; height:22px; border-radius:50%; border:1.5px solid var(--border); }
+  .thermo-marks { position:absolute; right:-18px; top:0; bottom:0; display:flex; flex-direction:column; justify-content:space-between; font-size:0.48rem; color:var(--muted); }
+  .thermo-info { flex:1; display:flex; flex-direction:column; justify-content:space-between; }
+  .thermo-main { font-family:'Fraunces',serif; font-size:2rem; font-weight:600; line-height:1; }
+  .thermo-sub { font-size:0.68rem; color:var(--muted); margin-top:2px; }
+  .thermo-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .thermo-box { background:var(--sand2); border-radius:6px; padding:8px 10px; }
+  .thermo-box .tb-label { font-size:0.56rem; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:3px; }
+  .thermo-box .tb-val { font-family:'Fraunces',serif; font-size:1.1rem; font-weight:600; }
+
+  /* FONDO DE AHORRO */
+  .saving-card { background:var(--saving-light); border:1.5px solid #c8a8e8; border-radius:10px; padding:14px; margin-bottom:12px; }
+  .saving-card .card-title { color:var(--saving); }
+  .saving-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:6px; }
+  .saving-box { background:white; border:1px solid #c8a8e8; border-radius:6px; padding:9px 8px; text-align:center; }
+  .saving-box .s-label { font-size:0.54rem; letter-spacing:1px; text-transform:uppercase; color:var(--saving); margin-bottom:3px; }
+  .saving-box .s-val { font-family:'Fraunces',serif; font-size:1.15rem; font-weight:600; line-height:1; }
+  .saving-box .s-unit { font-size:0.58rem; color:var(--muted); }
+
+  /* GRID DIARIO */
+  .daily-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+  .d-box { border-radius:8px; padding:10px 8px; text-align:center; border:1px solid transparent; }
+  .d-box .d-label { font-size:0.54rem; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px; }
+  .d-box .d-val { font-family:'Fraunces',serif; font-size:1.15rem; font-weight:600; line-height:1; }
+  .d-box .d-unit { font-size:0.58rem; color:var(--muted); }
+  .d-box.garden-b { background:var(--garden-light); border-color:#b0dfc8; }
+  .d-box.garden-b .d-label { color:var(--garden); }
+  .d-box.home-b { background:var(--home-light); border-color:#e8c4b0; }
+  .d-box.home-b .d-label { color:var(--home); }
+  .d-box.total-b { background:var(--water-light); border-color:#b0cff0; }
+  .d-box.total-b .d-label { color:var(--water); }
+  .d-box.allowed { background:var(--garden-light); border-color:#b0dfc8; }
+  .d-box.allowed .d-label { color:var(--garden); }
+  .d-box.pace-ok { background:var(--garden-light); border-color:#b0dfc8; }
+  .d-box.pace-ok .d-label { color:var(--garden); }
+  .d-box.pace-bad { background:var(--danger-light); border-color:#f0a0a0; }
+  .d-box.pace-bad .d-label { color:var(--danger); }
+  .d-box.neutral { background:var(--sand2); border-color:var(--border); }
+  .d-box.neutral .d-label { color:var(--muted); }
+  .d-box.saving-b { background:var(--saving-light); border-color:#c8a8e8; }
+  .d-box.saving-b .d-label { color:var(--saving); }
+
+  /* ENTRADA DOS PASOS */
+  .two-step { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .step-card { border:1.5px solid var(--border); border-radius:8px; padding:12px; }
+  .step-card.active-step { border-color:var(--garden); background:#f8fef8; }
+  .step-card.done-step { border-color:#b0dfc8; background:var(--garden-light); }
+  .step-card.active-home { border-color:var(--home); background:#fef8f5; }
+  .step-title { font-size:0.58rem; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+  .step-card.active-step .step-title { color:var(--garden); }
+  .step-card.done-step .step-title { color:var(--garden); }
+  .step-card.active-home .step-title { color:var(--home); }
+  .step-card input { width:100%; padding:7px 8px; border-radius:5px; border:1.5px solid var(--border); font-family:'DM Mono',monospace; font-size:0.9rem; background:white; color:var(--ink); -moz-appearance:textfield; }
+  .step-card input::-webkit-outer-spin-button, .step-card input::-webkit-inner-spin-button { -webkit-appearance:none; }
+  .step-card input:focus { outline:none; border-color:var(--garden); }
+  .step-card.active-home input:focus { border-color:var(--home); }
+  .step-done-val { font-family:'Fraunces',serif; font-size:1.1rem; font-weight:600; color:var(--garden); }
+  .step-done-m3 { font-size:0.62rem; color:var(--muted); margin-top:2px; }
+
+  .date-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .date-row label { font-size:0.6rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+  .date-row input[type="date"] { flex:1; padding:7px 10px; border:1.5px solid var(--border); border-radius:6px; font-family:'DM Mono',monospace; font-size:0.8rem; background:var(--sand); color:var(--ink); }
+  .date-row input[type="date"]:focus { outline:none; border-color:var(--water); }
+
+  .reading-hint { font-size:0.64rem; color:var(--muted); margin-bottom:10px; padding:7px 10px; background:var(--sand2); border-radius:5px; line-height:1.5; }
+
+  /* NOTA DEL DÍA */
+  .note-section { margin-top:10px; border-top:1px solid var(--sand2); padding-top:10px; }
+  .note-section label { font-size:0.58rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:5px; }
+  .note-section textarea { width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:6px; font-family:'DM Mono',monospace; font-size:0.78rem; background:var(--sand); color:var(--ink); resize:none; height:52px; line-height:1.4; }
+  .note-section textarea:focus { outline:none; border-color:var(--water); background:white; }
+  .extra-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .extra-row label { font-size:0.58rem; letter-spacing:1px; text-transform:uppercase; color:var(--summer); white-space:nowrap; }
+  .extra-row input { flex:1; padding:7px 10px; border:1.5px solid #f0b080; border-radius:6px; font-family:'DM Mono',monospace; font-size:0.85rem; background:#fff8f4; color:var(--ink); -moz-appearance:textfield; }
+  .extra-row input::-webkit-outer-spin-button, .extra-row input::-webkit-inner-spin-button { -webkit-appearance:none; }
+
+  .btn-add { width:100%; padding:10px; background:var(--ink); color:var(--sand); border:none; border-radius:7px; font-family:'DM Mono',monospace; font-size:0.76rem; letter-spacing:1px; cursor:pointer; transition:background 0.15s; margin-top:10px; }
+  .btn-add:hover { background:var(--ink2); }
+  .btn-add-step { width:100%; padding:10px; background:var(--garden); color:white; border:none; border-radius:7px; font-family:'DM Mono',monospace; font-size:0.76rem; cursor:pointer; transition:opacity 0.15s; margin-top:10px; }
+  .btn-add-step:hover { opacity:0.85; }
+
+  /* GRÁFICA MENSUAL */
+  .month-chart-wrap { background:white; border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px; overflow-x:auto; }
+  .month-chart-title { font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+  .month-chart { display:flex; align-items:flex-end; gap:3px; height:100px; position:relative; min-width:300px; padding-bottom:18px; }
+  .mc-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; position:relative; }
+  .mc-bar { width:100%; border-radius:2px 2px 0 0; min-height:2px; position:relative; transition:height 0.4s; }
+  .mc-bar.garden-col { background:var(--garden); opacity:0.85; }
+  .mc-bar.home-col { background:var(--home); opacity:0.7; }
+  .mc-bar-label { position:absolute; bottom:-16px; font-size:0.48rem; color:var(--muted); white-space:nowrap; }
+  .mc-limit { position:absolute; left:0; right:0; border-top:1.5px dashed var(--danger); opacity:0.6; }
+  .mc-limit-label { position:absolute; right:0; font-size:0.5rem; color:var(--danger); top:-11px; }
+  .mc-legend { display:flex; gap:12px; margin-top:20px; }
+  .mc-legend-item { display:flex; align-items:center; gap:5px; font-size:0.62rem; color:var(--muted); }
+  .mc-dot { width:8px; height:8px; border-radius:2px; }
+
+  /* STATS */
+  .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  .stat-box { border-radius:8px; padding:12px; border:1px solid transparent; }
+  .stat-box.garden { background:var(--garden-light); border-color:#b0dfc8; }
+  .stat-box.home { background:var(--home-light); border-color:#e8c4b0; }
+  .stat-box.total { background:var(--water-light); border-color:#b0cff0; }
+  .stat-box.remain { background:var(--sand2); border-color:var(--border); }
+  .stat-label { font-size:0.56rem; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px; }
+  .stat-box.garden .stat-label { color:var(--garden); }
+  .stat-box.home .stat-label { color:var(--home); }
+  .stat-box.total .stat-label { color:var(--water); }
+  .stat-box.remain .stat-label { color:var(--muted); }
+  .stat-value { font-family:'Fraunces',serif; font-size:1.4rem; font-weight:600; line-height:1; }
+  .stat-unit { font-size:0.62rem; color:var(--muted); margin-left:2px; }
+  .stat-sub { font-size:0.6rem; color:var(--muted); margin-top:3px; }
+
+  .projection { background:var(--sand2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; font-size:0.72rem; }
+  .projection-title { font-size:0.56rem; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+  .proj-row { display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border); }
+  .proj-row:last-child { border-bottom:none; }
+  .proj-val { font-weight:500; }
+  .proj-val.ok { color:var(--garden); }
+  .proj-val.warn { color:var(--warn); }
+  .proj-val.bad { color:var(--danger); }
+
+  /* LOG */
+  .log-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .log-title { font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+  .btn-clear { font-family:'DM Mono',monospace; font-size:0.6rem; background:none; border:1px solid var(--border); border-radius:5px; color:var(--muted); padding:3px 9px; cursor:pointer; transition:all 0.15s; }
+  .btn-clear:hover { border-color:var(--danger); color:var(--danger); }
+
+  .log-table { width:100%; border-collapse:collapse; font-size:0.7rem; }
+  .log-table th { text-align:left; padding:5px 7px; font-size:0.56rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); border-bottom:1.5px solid var(--border); }
+  .log-table td { padding:6px 7px; border-bottom:1px solid var(--sand2); vertical-align:middle; }
+  .log-table tr:last-child td { border-bottom:none; }
+  .log-table tr.clickable:hover td { background:var(--sand2); cursor:pointer; }
+  .log-table tr.partial td { background:#fffbf0; }
+
+  .tag { display:inline-block; font-size:0.56rem; padding:2px 5px; border-radius:10px; font-weight:500; }
+  .tag.garden { background:var(--garden-light); color:var(--garden); }
+  .tag.home { background:var(--home-light); color:var(--home); }
+  .tag.pending { background:var(--warn-light); color:var(--warn); }
+  .btn-del { background:none; border:none; cursor:pointer; color:var(--border); font-size:0.78rem; padding:2px 3px; border-radius:3px; transition:color 0.15s; }
+  .btn-del:hover { color:var(--danger); }
+  .empty-log { text-align:center; padding:20px; color:var(--muted); font-size:0.72rem; font-style:italic; }
+
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:100; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:white; border-radius:12px; padding:18px; width:100%; max-width:360px; }
+  .modal-title { font-family:'Fraunces',serif; font-size:1.1rem; font-weight:600; margin-bottom:3px; }
+  .modal-date { font-size:0.68rem; color:var(--muted); margin-bottom:14px; }
+  .modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .modal-box { border-radius:8px; padding:11px; text-align:center; }
+  .modal-box.g { background:var(--garden-light); }
+  .modal-box.h { background:var(--home-light); }
+  .modal-box .m-label { font-size:0.56rem; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:5px; }
+  .modal-box.g .m-label { color:var(--garden); }
+  .modal-box.h .m-label { color:var(--home); }
+  .modal-box .m-val { font-family:'Fraunces',serif; font-size:1.25rem; font-weight:600; }
+  .modal-box .m-m3 { font-size:0.62rem; color:var(--muted); margin-top:2px; }
+  .modal-total { text-align:center; padding:9px; background:var(--water-light); border-radius:8px; margin-bottom:10px; }
+  .modal-total .m-label { font-size:0.56rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--water); margin-bottom:3px; }
+  .modal-total .m-val { font-family:'Fraunces',serif; font-size:1.3rem; font-weight:600; }
+  .modal-note { background:var(--sand2); border-radius:6px; padding:8px 10px; margin-bottom:10px; font-size:0.72rem; color:var(--ink2); line-height:1.4; min-height:36px; }
+  .modal-extra { background:var(--summer-light); border-radius:6px; padding:7px 10px; margin-bottom:10px; font-size:0.72rem; }
+  .modal-extra .me-label { font-size:0.54rem; letter-spacing:1px; text-transform:uppercase; color:var(--summer); margin-bottom:2px; }
+  .btn-modal-close { width:100%; padding:9px; background:var(--ink); color:var(--sand); border:none; border-radius:7px; font-family:'DM Mono',monospace; font-size:0.76rem; cursor:pointer; }
+
+  /* HISTORIAL */
+  .hist-chart-wrap { background:white; border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px; overflow-x:auto; }
+  .chart-bars { display:flex; align-items:flex-end; gap:4px; height:110px; position:relative; min-width:340px; padding-bottom:22px; }
+  .chart-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; position:relative; }
+  .chart-bar { width:100%; border-radius:2px 2px 0 0; min-height:2px; }
+  .chart-bar.summer-bar { background:var(--summer); }
+  .chart-bar.winter-bar { background:var(--water); opacity:0.7; }
+  .chart-bar-label { position:absolute; bottom:-20px; font-size:0.5rem; color:var(--muted); white-space:nowrap; transform:rotate(-30deg); transform-origin:top center; }
+  .chart-val { position:absolute; top:-13px; font-size:0.52rem; font-weight:500; color:var(--ink2); }
+  .limit-line { position:absolute; left:0; right:0; border-top:1.5px dashed var(--danger); opacity:0.5; }
+  .limit-label { position:absolute; right:0; font-size:0.5rem; color:var(--danger); top:-11px; }
+
+  /* DATOS */
+  .baseline-card { background:#e8f4fd; border:1.5px solid #a8cff0; border-radius:10px; padding:13px 15px; margin-bottom:12px; }
+  .baseline-card .card-title { color:var(--water); }
+  .baseline-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .baseline-field label { display:block; font-size:0.58rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--water); margin-bottom:3px; }
+  .baseline-field input { width:100%; padding:7px 9px; border-radius:5px; border:1.5px solid #a8cff0; font-family:'DM Mono',monospace; font-size:0.88rem; background:white; color:var(--ink); -moz-appearance:textfield; }
+  .baseline-field input::-webkit-outer-spin-button, .baseline-field input::-webkit-inner-spin-button { -webkit-appearance:none; }
+  .btn-baseline { width:100%; padding:8px; background:var(--water); color:white; border:none; border-radius:6px; font-family:'DM Mono',monospace; font-size:0.74rem; cursor:pointer; margin-top:8px; }
+  .baseline-info { margin-top:6px; font-size:0.68rem; color:var(--water); }
+
+  .company-card { background:#f0f8f0; border:1.5px solid #a8d8b8; border-radius:10px; padding:13px 15px; margin-bottom:12px; }
+  .company-card .card-title { color:var(--garden); }
+
+  .reading-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+  .reading-field label { display:block; font-size:0.58rem; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px; }
+  .reading-field.garden label { color:var(--garden); }
+  .reading-field.home label { color:var(--home); }
+  .reading-field input { width:100%; padding:7px 9px; border-radius:5px; border:1.5px solid var(--border); font-family:'DM Mono',monospace; font-size:0.88rem; background:var(--sand); color:var(--ink); -moz-appearance:textfield; }
+  .reading-field input::-webkit-outer-spin-button, .reading-field input::-webkit-inner-spin-button { -webkit-appearance:none; }
+
+  .btn-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+  .btn-action { padding:9px; background:none; border:1.5px solid var(--ink); border-radius:6px; font-family:'DM Mono',monospace; font-size:0.7rem; color:var(--ink); cursor:pointer; transition:all 0.15s; text-align:center; }
+  .btn-action:hover { background:var(--ink); color:var(--sand); }
+  .btn-action.csv { border-color:var(--garden); color:var(--garden); }
+  .btn-action.csv:hover { background:var(--garden); color:white; }
+  .btn-action.imp { border-color:var(--water); color:var(--water); }
+  .btn-action.imp:hover { background:var(--water); color:white; }
+  #file-input { display:none; }
+
+  .section-label { font-size:0.56rem; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:7px; margin-top:2px; }
+
+  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--ink); color:var(--sand); padding:9px 18px; border-radius:18px; font-size:0.74rem; transition:transform 0.3s; pointer-events:none; white-space:nowrap; z-index:999; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">Aguas de los Verdiales · Contador 62093178</div>
+  <h1>Control <span>10.000 L</span>/mes</h1>
+  <div class="header-stats">
+    <div><div class="hdr-num" id="hdr-remaining">—</div><div class="hdr-label">litros restantes</div></div>
+    <div><div class="hdr-num" id="hdr-daily">333</div><div class="hdr-label">L/día disponibles</div></div>
+    <div><div class="hdr-num hdr-saving" id="hdr-saving">0</div><div class="hdr-label">L fondo ahorro</div></div>
+  </div>
+</header>
+<div class="progress-wrap">
+  <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="progress-labels"><span id="prog-used">0 L (0,0%)</span><span>cuota 10.000 L/mes</span></div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tbtn-registro" onclick="switchTab('registro')">📋 Registro</button>
+  <button class="tab-btn" id="tbtn-graficas" onclick="switchTab('graficas')">📊 Gráficas</button>
+  <button class="tab-btn" id="tbtn-historial" onclick="switchTab('historial')">📅 Historial</button>
+  <button class="tab-btn" id="tbtn-datos" onclick="switchTab('datos')">⚙️ Datos</button>
+</div>
+
+<main>
+
+<!-- ══ REGISTRO ══ -->
+<div class="tab-panel active" id="tab-registro">
+  <br>
+  <div class="month-bar">
+    <button onclick="changeMonth(-1)">‹</button>
+    <span class="month-name" id="month-label"></span>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+
+  <div class="alert" id="alert-missing"></div>
+  <div class="alert" id="alert-summer"></div>
+  <div class="alert" id="alert-box"></div>
+
+  <!-- TERMÓMETRO TRIMESTRAL -->
+  <div class="thermo-card">
+    <div class="card-title">🌡️ Acumulado trimestral desde última factura</div>
+    <div class="thermo-wrap">
+      <div style="position:relative;margin-right:22px;">
+        <div class="thermo-tube">
+          <div class="thermo-fill" id="thermo-fill" style="height:0%;background:var(--garden)"></div>
+          <div class="thermo-bulb" id="thermo-bulb" style="background:var(--garden)"></div>
+        </div>
+        <div class="thermo-marks">
+          <span>30</span><span>24</span><span>18</span><span>12</span><span>6</span><span>0</span>
+        </div>
+      </div>
+      <div class="thermo-info">
+        <div>
+          <div class="thermo-main" id="thermo-m3">—<span style="font-size:1rem"> m³</span></div>
+          <div class="thermo-sub" id="thermo-sub">de 30 m³ cuota trimestral</div>
+        </div>
+        <div class="thermo-grid">
+          <div class="thermo-box"><div class="tb-label">En litros</div><div class="tb-val" id="thermo-liters">—</div></div>
+          <div class="thermo-box"><div class="tb-label">Est. factura</div><div class="tb-val" id="thermo-bill">— €</div></div>
+          <div class="thermo-box"><div class="tb-label">Restante</div><div class="tb-val" id="thermo-left">—</div></div>
+          <div class="thermo-box"><div class="tb-label">Desde</div><div class="tb-val" id="thermo-from" style="font-size:0.78rem">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FONDO DE AHORRO -->
+  <div class="saving-card">
+    <div class="card-title">💜 Fondo de litros ahorrados</div>
+    <div class="saving-grid">
+      <div class="saving-box"><div class="s-label">Fondo total</div><div class="s-val" id="save-total">0<span class="s-unit"> L</span></div></div>
+      <div class="saving-box"><div class="s-label">Días en verde</div><div class="s-val" id="save-days">0</div></div>
+      <div class="saving-box"><div class="s-label">Ahorro medio</div><div class="s-val" id="save-avg">0<span class="s-unit"> L</span></div></div>
+    </div>
+    <div style="font-size:0.64rem;color:var(--saving);margin-top:8px;line-height:1.5;" id="save-msg">Los días que consumes menos de 333 L, el sobrante se acumula aquí para usarlo en días de calor extremo.</div>
+  </div>
+
+  <!-- HOY -->
+  <div class="section-label">Hoy</div>
+  <div class="daily-grid">
+    <div class="d-box garden-b"><div class="d-label">🌿 Jardín</div><div class="d-val" id="val-today-g">—<span class="d-unit"> L</span></div></div>
+    <div class="d-box home-b"><div class="d-label">🏠 Domést.</div><div class="d-val" id="val-today-h">—<span class="d-unit"> L</span></div></div>
+    <div class="d-box total-b"><div class="d-label">Total</div><div class="d-val" id="val-today-total">—<span class="d-unit"> L</span></div></div>
+  </div>
+  <div class="daily-grid">
+    <div class="d-box allowed"><div class="d-label">Máx/día</div><div class="d-val">333<span class="d-unit"> L</span></div></div>
+    <div class="d-box" id="box-pace"><div class="d-label" id="pace-label">Ritmo</div><div class="d-val" id="val-pace">—</div></div>
+    <div class="d-box saving-b"><div class="d-label">Fondo</div><div class="d-val" id="val-saving-hdr">—<span class="d-unit"> L</span></div></div>
+  </div>
+
+  <!-- ENTRADA DOS PASOS -->
+  <div class="card">
+    <div class="card-title">Nueva lectura del contador</div>
+    <div class="reading-hint" id="reading-hint">💡 Puedes guardar solo la lectura de mañana a las 09:30 y completar la de medianoche más tarde.</div>
+    <div class="date-row"><label>Fecha</label><input type="date" id="inp-date"></div>
+    <div class="two-step">
+      <div class="step-card" id="step-garden-card">
+        <div class="step-title">🌿 09:30h Jardín</div>
+        <div id="step-garden-done" style="display:none">
+          <div class="step-done-val" id="step-garden-done-val">—</div>
+          <div class="step-done-m3" id="step-garden-done-m3">—</div>
+        </div>
+        <input type="number" id="inp-garden" placeholder="m³ contador" step="0.001" min="0">
+      </div>
+      <div class="step-card" id="step-home-card">
+        <div class="step-title">🏠 00:00h Domést.</div>
+        <div id="step-home-done" style="display:none">
+          <div class="step-done-val" id="step-home-done-val">—</div>
+          <div class="step-done-m3" id="step-home-done-m3">—</div>
+        </div>
+        <input type="number" id="inp-home" placeholder="m³ contador" step="0.001" min="0">
+      </div>
+    </div>
+    <!-- NOTA DEL DÍA -->
+    <div class="note-section">
+      <label>📝 Nota del día (opcional)</label>
+      <textarea id="inp-note" placeholder="Ej: Calor extremo, riego doble..."></textarea>
+      <div class="extra-row">
+        <label>☀️ Riego extra (L)</label>
+        <input type="number" id="inp-extra" placeholder="0" step="1" min="0">
+      </div>
+    </div>
+    <button class="btn-add-step" onclick="addReading()">Guardar lectura</button>
+  </div>
+
+  <!-- STATS MES -->
+  <div class="section-label">Acumulado del mes</div>
+  <div class="stats-grid">
+    <div class="stat-box garden"><div class="stat-label">🌿 Jardín</div><div class="stat-value" id="stat-garden">0<span class="stat-unit">L</span></div><div class="stat-sub" id="stat-garden-pct">—</div></div>
+    <div class="stat-box home"><div class="stat-label">🏠 Doméstico</div><div class="stat-value" id="stat-home">0<span class="stat-unit">L</span></div><div class="stat-sub" id="stat-home-pct">—</div></div>
+    <div class="stat-box total"><div class="stat-label">Total consumido</div><div class="stat-value" id="stat-total">0<span class="stat-unit">L</span></div><div class="stat-sub" id="stat-days">0 días</div></div>
+    <div class="stat-box remain"><div class="stat-label">Restante cuota</div><div class="stat-value" id="stat-remain">10.000<span class="stat-unit">L</span></div><div class="stat-sub" id="stat-daily-budget">máx. 333 L/día</div></div>
+  </div>
+
+  <!-- PROYECCIÓN -->
+  <div class="projection" id="projection-box" style="display:none">
+    <div class="projection-title">Proyección a fin de mes</div>
+    <div class="proj-row"><span>Días restantes</span><span class="proj-val" id="proj-days-left">—</span></div>
+    <div class="proj-row"><span>Consumo proyectado</span><span class="proj-val" id="proj-total">—</span></div>
+    <div class="proj-row"><span>Margen sobre cuota</span><span class="proj-val" id="proj-margin">—</span></div>
+    <div class="proj-row"><span>Máximo diario recomendado</span><span class="proj-val" id="proj-max-day">—</span></div>
+  </div>
+
+  <!-- LOG -->
+  <div class="log-header">
+    <span class="log-title">Registro — pulsa un día para ver detalle</span>
+    <button class="btn-clear" onclick="clearMonth()">Borrar mes</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table class="log-table">
+      <thead><tr><th>Día</th><th>Jardín</th><th>Domést.</th><th>Total</th><th></th></tr></thead>
+      <tbody id="log-body"><tr><td colspan="5" class="empty-log">Sin registros aún.</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ GRÁFICAS ══ -->
+<div class="tab-panel" id="tab-graficas">
+  <br>
+  <div class="month-bar">
+    <button onclick="changeMonthChart(-1)">‹</button>
+    <span class="month-name" id="chart-month-label"></span>
+    <button onclick="changeMonthChart(1)">›</button>
+  </div>
+  <div class="month-chart-wrap">
+    <div class="month-chart-title" id="chart-title">Consumo diario del mes (L)</div>
+    <div class="month-chart" id="month-chart"></div>
+    <div class="mc-legend">
+      <div class="mc-legend-item"><div class="mc-dot" style="background:var(--garden)"></div>Jardín</div>
+      <div class="mc-legend-item"><div class="mc-dot" style="background:var(--home);opacity:0.7"></div>Doméstico</div>
+      <div class="mc-legend-item"><div class="mc-dot" style="background:var(--danger);opacity:0.6;height:2px;width:16px;border-radius:0"></div>Límite 333 L</div>
+    </div>
+  </div>
+  <div class="card" id="chart-summary">
+    <div class="card-title">Resumen del mes</div>
+    <div style="font-size:0.74rem;line-height:1.9;color:var(--ink2);" id="chart-summary-content">—</div>
+  </div>
+</div>
+
+<!-- ══ HISTORIAL ══ -->
+<div class="tab-panel" id="tab-historial">
+  <br>
+  <div class="hist-chart-wrap">
+    <div class="month-chart-title">Consumo histórico trimestral (m³)</div>
+    <div class="chart-bars" id="hist-chart"></div>
+    <div class="mc-legend" style="margin-top:24px;">
+      <div class="mc-legend-item"><div class="mc-dot" style="background:var(--summer)"></div>Verano Jul–Sep</div>
+      <div class="mc-legend-item"><div class="mc-dot" style="background:var(--water);opacity:0.7"></div>Resto del año</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Análisis estacional</div>
+    <div style="font-size:0.72rem;line-height:1.9;color:var(--ink2);">
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sand2);padding:3px 0;"><span>Media trimestre verano</span><span style="font-weight:500;color:var(--summer)">18 m³</span></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sand2);padding:3px 0;"><span>Media resto del año</span><span style="font-weight:500;color:var(--water)">9 m³</span></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sand2);padding:3px 0;"><span>Pico máximo registrado</span><span style="font-weight:500;color:var(--danger)">26 m³ (Jul-Sep 2021)</span></div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Cuota mensual equivale a</span><span style="font-weight:500;color:var(--garden)">30 m³/trimestre</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DATOS ══ -->
+<div class="tab-panel" id="tab-datos">
+  <br>
+  <div class="baseline-card">
+    <div class="card-title">📍 Lectura inicial del mes</div>
+    <p style="font-size:0.7rem;color:#4a7aaa;line-height:1.5;">Al cambiar de mes se propone automáticamente la última lectura del mes anterior.</p>
+    <div class="baseline-grid">
+      <div class="baseline-field"><label>Lectura inicial (m³)</label><input type="number" id="inp-baseline" placeholder="Ej: 255.450" step="0.001" min="0"></div>
+      <div class="baseline-field"><label>Fecha inicio</label><input type="date" id="inp-baseline-date"></div>
+    </div>
+    <button class="btn-baseline" onclick="setBaseline()">Fijar lectura inicial</button>
+    <div class="baseline-info" id="baseline-info">—</div>
+  </div>
+
+  <div class="company-card">
+    <div class="card-title">🏢 Última lectura de la compañía</div>
+    <p style="font-size:0.7rem;color:#3a7a5a;line-height:1.5;margin-bottom:8px;">Punto de inicio del trimestre. Al guardarlo el contador trimestral se reinicia.</p>
+    <div class="reading-row">
+      <div class="reading-field garden"><label>Lectura factura (m³)</label><input type="number" id="inp-company-reading" placeholder="Ej: 249" step="0.001" min="0"></div>
+      <div class="reading-field home"><label>Precio agua (€/m³)</label><input type="number" id="inp-price" placeholder="0.622" step="0.001" min="0"></div>
+    </div>
+    <button class="btn-add" style="background:var(--garden);margin-top:0;" onclick="setCompanyReading()">Guardar — reinicia trimestre</button>
+    <div style="font-size:0.66rem;color:var(--muted);margin-top:7px;" id="company-info">—</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💾 Copia de seguridad JSON</div>
+    <p style="font-size:0.7rem;color:var(--muted);line-height:1.5;margin-bottom:10px;">Exporta todos los datos para restaurarlos en versiones futuras de la app.</p>
+    <div class="btn-row">
+      <button class="btn-action imp" onclick="exportJSON()">⬇ Exportar JSON</button>
+      <button class="btn-action imp" onclick="document.getElementById('file-input').click()">⬆ Importar JSON</button>
+    </div>
+    <input type="file" id="file-input" accept=".json" onchange="importJSON(event)">
+  </div>
+
+  <div class="card">
+    <div class="card-title">📄 Exportar CSV</div>
+    <div class="btn-row">
+      <button class="btn-action csv" onclick="exportCSV()">⬇ CSV este mes</button>
+      <button class="btn-action csv" onclick="exportCSVAll()">⬇ CSV histórico</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">—</div>
+    <div class="modal-date">Lecturas del contador</div>
+    <div class="modal-grid">
+      <div class="modal-box g"><div class="m-label">🌿 09:30h Jardín</div><div class="m-val" id="modal-g-val">—</div><div class="m-m3" id="modal-g-m3">—</div></div>
+      <div class="modal-box h"><div class="m-label">🏠 00:00h Domést.</div><div class="m-val" id="modal-h-val">—</div><div class="m-m3" id="modal-h-m3">—</div></div>
+    </div>
+    <div class="modal-total"><div class="m-label">Total del día</div><div class="m-val" id="modal-total-val">—</div></div>
+    <div class="modal-note" id="modal-note" style="display:none"></div>
+    <div class="modal-extra" id="modal-extra" style="display:none"><div class="me-label">☀️ Riego extra</div><div id="modal-extra-val">—</div></div>
+    <button class="btn-modal-close" onclick="closeModal()">Cerrar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const QUOTA=10000, DAILY_MAX=333;
+const HISTORY=[
+  {p:'Ene-Mar 21',m:2,s:false},{p:'Abr-Jun 21',m:5,s:false},{p:'Jul-Sep 21',m:26,s:true},{p:'Oct-Dic 21',m:10,s:false},
+  {p:'Ene-Mar 22',m:7,s:false},{p:'Abr-Jun 22',m:7,s:false},{p:'Jul-Sep 22',m:17,s:true},{p:'Oct-Dic 22',m:11,s:false},
+  {p:'Ene-Mar 23',m:4,s:false},{p:'Abr-Jun 23',m:9,s:false},{p:'Jul-Sep 23',m:13,s:true},{p:'Oct-Dic 23',m:12,s:false},
+  {p:'Ene-Mar 24',m:13,s:false},{p:'Abr-Jun 24',m:8,s:false},{p:'Jul-Sep 24',m:17,s:true},{p:'Oct-Dic 24',m:9,s:false},
+  {p:'Ene-Mar 25',m:7,s:false},{p:'Abr-Jun 25',m:17,s:false},{p:'Jul-Sep 25',m:21,s:true},{p:'Oct-Dic 25',m:7,s:false},
+  {p:'Ene-Mar 26',m:11,s:false},{p:'Abr-Jun 26',m:11,s:false}
+];
+
+let cY,cM, chartY,chartM;
+
+// STORAGE
+function sk(s){return `agua_${cY}_${String(cM+1).padStart(2,'0')}_${s}`;}
+function le(){try{return JSON.parse(localStorage.getItem(sk('entries'))||'[]');}catch(e){return[];}}
+function se(a){localStorage.setItem(sk('entries'),JSON.stringify(a));}
+function lb(){const r=localStorage.getItem(sk('baseline'));return r!==null?parseFloat(r):null;}
+function sb(v){localStorage.setItem(sk('baseline'),String(v));}
+function lcr(){try{return JSON.parse(localStorage.getItem('agua_company')||'null');}catch(e){return null;}}
+function scr(o){localStorage.setItem('agua_company',JSON.stringify(o));}
+
+function fmt(n){return Math.round(n).toLocaleString('es-ES');}
+function fmtD(n){return n.toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1});}
+function isSummer(m){return m>=5&&m<=8;}
+
+function init(){
+  const now=new Date();
+  cY=now.getFullYear(); cM=now.getMonth();
+  chartY=cY; chartM=cM;
+  document.getElementById('inp-date').value=now.toISOString().slice(0,10);
+  document.getElementById('inp-baseline-date').value=new Date(cY,cM,1).toISOString().slice(0,10);
+  autoBaseline();
+  if(!lcr()) scr({reading:249,label:'Jun 2026',price:0.622});
+  renderAll();
+  renderHistChart();
+}
+
+function autoBaseline(){
+  if(lb()!==null) return;
+  const pm=cM===0?11:cM-1, py=cM===0?cY-1:cY;
+  try{
+    const arr=JSON.parse(localStorage.getItem(`agua_${py}_${String(pm+1).padStart(2,'0')}_entries`)||'[]');
+    if(arr.length>0){
+      const last=arr.sort((a,b)=>b.date.localeCompare(a.date))[0];
+      if(last._counterHome){sb(last._counterHome);showToast(`Lectura inicial ${last._counterHome.toFixed(3)} m³ del mes anterior ✓`);}
+    }
+  }catch(e){}
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('tbtn-'+name).classList.add('active');
+  if(name==='graficas') renderMonthChart();
+  if(name==='historial') renderHistChart();
+}
+
+function changeMonth(dir){
+  cM+=dir;
+  if(cM<0){cM=11;cY--;}
+  if(cM>11){cM=0;cY++;}
+  autoBaseline();
+  renderAll();
+}
+
+function changeMonthChart(dir){
+  chartM+=dir;
+  if(chartM<0){chartM=11;chartY--;}
+  if(chartM>11){chartM=0;chartY++;}
+  renderMonthChart();
+}
+
+function renderAll(){
+  renderHeader();
+  renderRegistro();
+  renderDatos();
+  renderTrimestre();
+  renderSaving();
+  updateStepUI();
+}
+
+// SAVING FUND
+function calcSaving(){
+  const entries=le();
+  let fund=0, greenDays=0, totalSaving=0;
+  entries.forEach(e=>{
+    if(e._counterHome){ // complete entry
+      const total=e.garden+e.home;
+      const diff=DAILY_MAX-total;
+      if(diff>0){fund+=diff;greenDays++;totalSaving+=diff;}
+    }
+  });
+  return {fund,greenDays,avg:greenDays>0?Math.round(totalSaving/greenDays):0};
+}
+
+function renderSaving(){
+  const {fund,greenDays,avg}=calcSaving();
+  document.getElementById('save-total').innerHTML=`${fmt(fund)}<span class="s-unit"> L</span>`;
+  document.getElementById('save-days').textContent=greenDays;
+  document.getElementById('save-avg').innerHTML=`${fmt(avg)}<span class="s-unit"> L</span>`;
+  document.getElementById('val-saving-hdr').innerHTML=`${fmt(fund)}<span class="d-unit"> L</span>`;
+  document.getElementById('hdr-saving').textContent=fmt(fund);
+  if(fund>0){
+    document.getElementById('save-msg').textContent=`Tienes ${fmt(fund)} L disponibles para días de calor extremo (${greenDays} días en verde, ahorro medio ${fmt(avg)} L/día).`;
+  }
+}
+
+function renderTrimestre(){
+  const cr=lcr();
+  if(!cr) return;
+  let latest=cr.reading;
+  for(let y=cY-1;y<=cY;y++){
+    for(let m=0;m<=11;m++){
+      try{
+        const arr=JSON.parse(localStorage.getItem(`agua_${y}_${String(m+1).padStart(2,'0')}_entries`)||'[]');
+        arr.forEach(e=>{if(e._counterHome&&e._counterHome>latest)latest=e._counterHome;});
+      }catch(e){}
+    }
+  }
+  const consumed=Math.max(0,latest-cr.reading);
+  const liters=Math.round(consumed*1000);
+  const bill=((11.97+consumed*(cr.price||0.622))*1.10).toFixed(0);
+  const pct=Math.min(100,(consumed/30)*100);
+  const color=pct<60?'var(--garden)':pct<85?'var(--warn)':'var(--danger)';
+
+  document.getElementById('thermo-fill').style.height=pct+'%';
+  document.getElementById('thermo-fill').style.background=color;
+  document.getElementById('thermo-bulb').style.background=color;
+  document.getElementById('thermo-m3').innerHTML=`${consumed.toFixed(2)}<span style="font-size:1rem"> m³</span>`;
+  document.getElementById('thermo-sub').textContent=`${fmtD(pct)}% de la cuota trimestral`;
+  document.getElementById('thermo-liters').textContent=fmt(liters)+' L';
+  document.getElementById('thermo-bill').textContent=bill+' €';
+  document.getElementById('thermo-left').textContent=fmtD(Math.max(0,30-consumed))+' m³';
+  document.getElementById('thermo-from').textContent=cr.label;
+}
+
+function renderHeader(){
+  const entries=le();
+  let tG=0,tH=0;
+  entries.forEach(e=>{tG+=e.garden;tH+=e.home;});
+  const total=tG+tH,remaining=QUOTA-total,pct=Math.min(100,total/QUOTA*100);
+  const fill=document.getElementById('progress-fill');
+  fill.style.width=pct+'%';
+  fill.style.background=pct<60?'#3a9e6a':pct<85?'#d4a017':'#c0392b';
+  document.getElementById('prog-used').textContent=`${fmt(total)} L usados (${fmtD(pct)}%)`;
+  const now=new Date();
+  const isNow=now.getFullYear()===cY&&now.getMonth()===cM;
+  const dim=new Date(cY,cM+1,0).getDate();
+  const dLeft=isNow?dim-now.getDate():0;
+  const dMax=dLeft>0?Math.max(0,Math.round(remaining/dLeft)):DAILY_MAX;
+  document.getElementById('hdr-remaining').textContent=fmt(Math.max(0,remaining));
+  document.getElementById('hdr-daily').textContent=fmt(dMax);
+}
+
+function updateStepUI(){
+  // Check if today's entry exists and is partial or complete
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const isNow=now.getFullYear()===cY&&now.getMonth()===cM;
+  if(!isNow) return;
+  const entries=le();
+  const te=entries.find(e=>e.date===todayStr);
+  const gCard=document.getElementById('step-garden-card');
+  const hCard=document.getElementById('step-home-card');
+  if(te){
+    // Show garden done
+    gCard.className='step-card done-step';
+    document.getElementById('step-garden-done').style.display='block';
+    document.getElementById('inp-garden').style.display='none';
+    document.getElementById('step-garden-done-val').textContent=fmt(te.garden)+' L';
+    document.getElementById('step-garden-done-m3').textContent=te._counterGarden?te._counterGarden.toFixed(3)+' m³':'—';
+    if(te._counterHome&&te._counterHome!==te._counterGarden){
+      // Complete
+      hCard.className='step-card done-step';
+      document.getElementById('step-home-done').style.display='block';
+      document.getElementById('inp-home').style.display='none';
+      document.getElementById('step-home-done-val').textContent=fmt(te.home)+' L';
+      document.getElementById('step-home-done-m3').textContent=te._counterHome?te._counterHome.toFixed(3)+' m³':'—';
+    } else {
+      hCard.className='step-card active-home';
+      document.getElementById('step-home-done').style.display='none';
+      document.getElementById('inp-home').style.display='block';
+    }
+  } else {
+    gCard.className='step-card active-step';
+    hCard.className='step-card';
+    document.getElementById('step-garden-done').style.display='none';
+    document.getElementById('inp-garden').style.display='block';
+    document.getElementById('step-home-done').style.display='none';
+    document.getElementById('inp-home').style.display='block';
+  }
+}
+
+function renderRegistro(){
+  const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('month-label').textContent=`${MONTHS[cM]} ${cY}`;
+  const baseline=lb();
+  const entries=le();
+  const now=new Date();
+  const isNow=now.getFullYear()===cY&&now.getMonth()===cM;
+
+  document.getElementById('reading-hint').textContent=baseline!==null
+    ?`💡 Lectura inicial: ${baseline.toFixed(3)} m³. Puedes guardar solo la lectura de 09:30 y completar medianoche después.`
+    :'⚠️ Ve a ⚙️ Datos y fija la lectura inicial del contador.';
+
+  let tG=0,tH=0;
+  entries.forEach(e=>{tG+=e.garden;tH+=e.home;});
+  const total=tG+tH,remaining=QUOTA-total,pct=Math.min(100,total/QUOTA*100);
+
+  // Alerta días sin registro
+  const ma=document.getElementById('alert-missing');
+  if(isNow&&entries.length>0){
+    const sorted=[...entries].sort((a,b)=>b.date.localeCompare(a.date));
+    const lastDate=new Date(sorted[0].date);
+    const today=new Date(now.toISOString().slice(0,10));
+    const diffDays=Math.round((today-lastDate)/(1000*60*60*24));
+    if(diffDays>=2){ma.className='alert info show';ma.textContent=`⚠️ Llevas ${diffDays} días sin registrar lecturas. Último registro: ${sorted[0].date.slice(8)}/${parseInt(sorted[0].date.slice(5,7))}.`;}
+    else{ma.className='alert';}
+  } else {ma.className='alert';}
+
+  // Summer
+  const sa=document.getElementById('alert-summer');
+  if(isSummer(cM)&&isNow){sa.className='alert summer show';sa.textContent='☀️ Verano — históricamente tu consumo sube un 80%. Histórico Jul-Sep: 13–26 m³.';}
+  else{sa.className='alert';}
+
+  // Quota
+  const ab=document.getElementById('alert-box');
+  ab.className='alert';
+  if(pct>=100){ab.className='alert danger show';ab.textContent='⛔ Has superado los 10.000 L. El exceso tiene tarifa mayor.';}
+  else if(pct>=85){ab.className='alert danger show';ab.textContent=`⚠️ Llevas ${fmt(total)} L (${fmtD(pct)}%). Solo quedan ${fmt(remaining)} L.`;}
+  else if(pct>=65){ab.className='alert warn show';ab.textContent=`📊 Llevas el ${fmtD(pct)}% de la cuota. Quedan ${fmt(remaining)} L.`;}
+
+  // Hoy
+  const todayStr=now.toISOString().slice(0,10);
+  const te=entries.find(e=>e.date===todayStr);
+  if(te&&isNow){
+    const partial=!te._counterHome||te._counterHome===te._counterGarden;
+    const tt=te.garden+te.home;
+    document.getElementById('val-today-g').innerHTML=`${fmt(te.garden)}<span class="d-unit"> L</span>`;
+    document.getElementById('val-today-h').innerHTML=partial?`<span style="color:var(--warn)">pendiente</span>`:`${fmt(te.home)}<span class="d-unit"> L</span>`;
+    document.getElementById('val-today-total').innerHTML=partial?`${fmt(te.garden)}<span class="d-unit"> L 🌿</span>`:`${fmt(tt)}<span class="d-unit"> L</span>`;
+    if(!partial){
+      const diff=tt-DAILY_MAX;
+      const pb=document.getElementById('box-pace');
+      if(diff<=0){pb.className='d-box pace-ok';document.getElementById('pace-label').textContent='Ritmo';document.getElementById('val-pace').innerHTML='OK ✓';}
+      else{pb.className='d-box pace-bad';document.getElementById('pace-label').textContent='Exceso';document.getElementById('val-pace').innerHTML=`+${fmt(diff)}<span class="d-unit"> L</span>`;}
+    }
+  } else {
+    ['val-today-g','val-today-h','val-today-total'].forEach(id=>document.getElementById(id).innerHTML=`—<span class="d-unit"> L</span>`);
+    document.getElementById('box-pace').className='d-box neutral';
+    document.getElementById('pace-label').textContent='Ritmo';
+    document.getElementById('val-pace').textContent='—';
+  }
+
+  const avg=entries.filter(e=>e._counterHome&&e._counterHome!==e._counterGarden).length>0
+    ?total/entries.filter(e=>e._counterHome&&e._counterHome!==e._counterGarden).length:0;
+
+  document.getElementById('stat-garden').innerHTML=`${fmt(tG)}<span class="stat-unit">L</span>`;
+  document.getElementById('stat-home').innerHTML=`${fmt(tH)}<span class="stat-unit">L</span>`;
+  document.getElementById('stat-total').innerHTML=`${fmt(total)}<span class="stat-unit">L</span>`;
+  document.getElementById('stat-remain').innerHTML=`${fmt(Math.max(0,remaining))}<span class="stat-unit">L</span>`;
+  document.getElementById('stat-days').textContent=`${entries.length} día${entries.length!==1?'s':''} registrado${entries.length!==1?'s':''}`;
+  document.getElementById('stat-garden-pct').textContent=total>0?`${(tG/total*100).toFixed(0)}% del total`:'—';
+  document.getElementById('stat-home-pct').textContent=total>0?`${(tH/total*100).toFixed(0)}% del total`:'—';
+
+  const dim=new Date(cY,cM+1,0).getDate();
+  const dLeft=isNow?dim-now.getDate():0;
+  const dBudget=dLeft>0?Math.max(0,Math.round(remaining/dLeft)):DAILY_MAX;
+  document.getElementById('stat-daily-budget').textContent=`máx. ${fmt(dBudget)} L/día`;
+
+  // Proyección
+  const pb2=document.getElementById('projection-box');
+  if(entries.length>=2&&avg>0&&isNow&&dLeft>0){
+    pb2.style.display='block';
+    const proj=total+avg*dLeft,margin=QUOTA-proj;
+    document.getElementById('proj-days-left').textContent=dLeft;
+    document.getElementById('proj-total').textContent=`${fmt(proj)} L`;
+    document.getElementById('proj-margin').textContent=`${margin>=0?'+':''}${fmt(margin)} L`;
+    document.getElementById('proj-max-day').textContent=`${fmt(Math.max(0,dBudget))} L/día`;
+    document.getElementById('proj-total').className='proj-val '+(proj<QUOTA*0.9?'ok':proj<QUOTA?'warn':'bad');
+    document.getElementById('proj-margin').className='proj-val '+(margin>500?'ok':margin>0?'warn':'bad');
+    document.getElementById('proj-max-day').className='proj-val '+(dBudget>250?'ok':dBudget>100?'warn':'bad');
+  } else { pb2.style.display='none'; }
+
+  // Log
+  const tbody=document.getElementById('log-body');
+  if(entries.length===0){
+    tbody.innerHTML='<tr><td colspan="5" class="empty-log">Sin registros este mes.</td></tr>';
+  } else {
+    const sorted=[...entries].sort((a,b)=>b.date.localeCompare(a.date));
+    tbody.innerHTML=sorted.map(e=>{
+      const idx=entries.indexOf(e);
+      const tt=e.garden+e.home;
+      const over=tt>DAILY_MAX;
+      const partial=!e._counterHome||e._counterHome===e._counterGarden;
+      const d=e.date.slice(8)+'/'+(parseInt(e.date.slice(5,7)));
+      const homeTag=partial?'<span class="tag pending">pendiente</span>':`<span class="tag home">${fmt(e.home)}</span>`;
+      const hasExtra=e.extraL&&e.extraL>0;
+      return `<tr class="clickable${partial?' partial':''}" onclick="openModal(${idx})">
+        <td>${d}${e.note?'📝':''}</td>
+        <td><span class="tag garden">${fmt(e.garden)}</span></td>
+        <td>${homeTag}</td>
+        <td style="font-weight:600;color:${over?'var(--danger)':'inherit'}">${fmt(tt)}${over?' ⚠':''}${hasExtra?'☀️':''}</td>
+        <td><button class="btn-del" onclick="event.stopPropagation();deleteEntry(${idx})">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// GRÁFICA MENSUAL
+function renderMonthChart(){
+  const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('chart-month-label').textContent=`${MONTHS[chartM]} ${chartY}`;
+  document.getElementById('chart-title').textContent=`Consumo diario — ${MONTHS[chartM]} ${chartY} (L)`;
+
+  const key=`agua_${chartY}_${String(chartM+1).padStart(2,'0')}_entries`;
+  let entries=[];
+  try{entries=JSON.parse(localStorage.getItem(key)||'[]');}catch(e){}
+
+  if(entries.length===0){
+    document.getElementById('month-chart').innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);font-size:0.75rem;">Sin datos este mes.</div>';
+    document.getElementById('chart-summary-content').innerHTML='Sin datos.';
+    return;
+  }
+
+  const dim=new Date(chartY,chartM+1,0).getDate();
+  const maxVal=Math.max(...entries.map(e=>e.garden+e.home), DAILY_MAX*1.2);
+  const hPx=78;
+  const limitPx=(DAILY_MAX/maxVal)*hPx;
+
+  let html=`<div class="mc-limit" style="bottom:${limitPx}px"><span class="mc-limit-label">333 L</span></div>`;
+
+  for(let d=1;d<=dim;d++){
+    const dateStr=`${chartY}-${String(chartM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const e=entries.find(en=>en.date===dateStr);
+    if(e){
+      const gH=Math.max(1,(e.garden/maxVal)*hPx);
+      const hH=Math.max(1,(e.home/maxVal)*hPx);
+      const total=e.garden+e.home;
+      const over=total>DAILY_MAX;
+      html+=`<div class="mc-bar-wrap" title="${d}/${chartM+1}: ${fmt(total)} L">
+        <div class="mc-bar home-col" style="height:${hH}px${over?';box-shadow:0 0 4px var(--danger)':''}"></div>
+        <div class="mc-bar garden-col" style="height:${gH}px${over?';box-shadow:0 0 4px var(--danger)':''}"></div>
+        <span class="mc-bar-label">${d}</span>
+      </div>`;
+    } else {
+      html+=`<div class="mc-bar-wrap"><div class="mc-bar" style="height:1px;background:var(--border)"></div><span class="mc-bar-label">${d}</span></div>`;
+    }
+  }
+  document.getElementById('month-chart').innerHTML=html;
+
+  // Summary
+  const complete=entries.filter(e=>e._counterHome&&e._counterHome!==e._counterGarden);
+  const totalG=entries.reduce((s,e)=>s+e.garden,0);
+  const totalH=entries.reduce((s,e)=>s+e.home,0);
+  const total=totalG+totalH;
+  const overDays=complete.filter(e=>e.garden+e.home>DAILY_MAX).length;
+  const {fund}=calcSaving();
+  document.getElementById('chart-summary-content').innerHTML=`
+    <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sand2);padding:2px 0;"><span>Total jardín</span><span style="color:var(--garden);font-weight:500">${fmt(totalG)} L</span></div>
+    <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sand2);padding:2px 0;"><span>Total doméstico</span><span style="color:var(--home);font-weight:500">${fmt(totalH)} L</span></div>
+    <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sand2);padding:2px 0;"><span>Total mes</span><span style="font-weight:500">${fmt(total)} L</span></div>
+    <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sand2);padding:2px 0;"><span>Días por encima de 333 L</span><span style="color:${overDays>0?'var(--danger)':'var(--garden)'};font-weight:500">${overDays}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:2px 0;"><span>Fondo ahorrado este mes</span><span style="color:var(--saving);font-weight:500">${fmt(fund)} L</span></div>`;
+}
+
+function renderHistChart(){
+  const container=document.getElementById('hist-chart');
+  if(!container) return;
+  const maxM3=Math.max(...HISTORY.map(h=>h.m),30);
+  const hPx=88;
+  let html=`<div class="limit-line" style="bottom:${(30/maxM3)*hPx}px"><span class="limit-label">30 m³ cuota</span></div>`;
+  HISTORY.forEach(h=>{
+    const bH=Math.max(2,(h.m/maxM3)*hPx);
+    html+=`<div class="chart-bar-wrap"><span class="chart-val">${h.m}</span><div class="chart-bar ${h.s?'summer-bar':'winter-bar'}" style="height:${bH}px"></div><span class="chart-bar-label">${h.p}</span></div>`;
+  });
+  container.innerHTML=html;
+}
+
+function renderDatos(){
+  const baseline=lb();
+  const cr=lcr()||{reading:249,label:'Jun 2026',price:0.622};
+  document.getElementById('baseline-info').textContent=baseline!==null?`✓ Lectura inicial: ${baseline.toFixed(3)} m³`:'Sin lectura inicial.';
+  document.getElementById('company-info').textContent=`Trimestre desde: ${cr.reading} m³ (${cr.label})`;
+  if(!document.getElementById('inp-price').value) document.getElementById('inp-price').value=cr.price;
+}
+
+// MODAL
+function openModal(idx){
+  const entries=le();
+  const e=entries[idx];
+  if(!e) return;
+  const [y,m,d]=e.date.split('-');
+  const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const partial=!e._counterHome||e._counterHome===e._counterGarden;
+  document.getElementById('modal-title').textContent=`${parseInt(d)} de ${MONTHS[parseInt(m)-1]} ${y}`;
+  document.getElementById('modal-g-val').textContent=`${fmt(e.garden)} L`;
+  document.getElementById('modal-g-m3').textContent=e._counterGarden?`${e._counterGarden.toFixed(3)} m³`:'—';
+  document.getElementById('modal-h-val').textContent=partial?'Pendiente':`${fmt(e.home)} L`;
+  document.getElementById('modal-h-m3').textContent=partial?'Lectura no registrada aún':e._counterHome?`${e._counterHome.toFixed(3)} m³`:'—';
+  document.getElementById('modal-total-val').textContent=partial?`${fmt(e.garden)} L 🌿 (parcial)`:`${fmt(e.garden+e.home)} L`;
+  const noteEl=document.getElementById('modal-note');
+  if(e.note){noteEl.style.display='block';noteEl.textContent='📝 '+e.note;}else{noteEl.style.display='none';}
+  const extraEl=document.getElementById('modal-extra');
+  if(e.extraL&&e.extraL>0){extraEl.style.display='block';document.getElementById('modal-extra-val').textContent=fmt(e.extraL)+' L de riego extra';}else{extraEl.style.display='none';}
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal(event){
+  if(!event||event.target===document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('show');
+}
+
+// ACTIONS
+function setBaseline(){
+  const val=parseFloat(document.getElementById('inp-baseline').value);
+  if(isNaN(val)||val<0) return showToast('Valor no válido');
+  sb(val);
+  document.getElementById('inp-baseline').value='';
+  renderAll();
+  showToast('Lectura inicial guardada ✓');
+}
+
+function setCompanyReading(){
+  const reading=parseFloat(document.getElementById('inp-company-reading').value);
+  const price=parseFloat(document.getElementById('inp-price').value)||0.622;
+  if(isNaN(reading)||reading<0) return showToast('Lectura no válida');
+  const MONTHS=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const now=new Date();
+  scr({reading,label:`${MONTHS[now.getMonth()]} ${now.getFullYear()}`,price});
+  document.getElementById('inp-company-reading').value='';
+  renderAll();
+  showToast('Trimestre reiniciado ✓');
+}
+
+function addReading(){
+  const baseline=lb();
+  if(baseline===null) return showToast('Fija la lectura inicial en ⚙️ Datos');
+  const dateVal=document.getElementById('inp-date').value;
+  if(!dateVal) return showToast('Indica la fecha');
+  const [y,m]=dateVal.split('-').map(Number);
+  if(y!==cY||m-1!==cM) return showToast('Fecha fuera del mes actual');
+
+  const gardenRaw=document.getElementById('inp-garden').value;
+  const homeRaw=document.getElementById('inp-home').value;
+  const note=document.getElementById('inp-note').value.trim();
+  const extraL=parseInt(document.getElementById('inp-extra').value)||0;
+
+  if(gardenRaw===''&&homeRaw==='') return showToast('Introduce al menos la lectura de 09:30');
+
+  const entries=le();
+  const sorted=[...entries].sort((a,b)=>a.date.localeCompare(b.date));
+  const existing=entries.findIndex(e=>e.date===dateVal);
+
+  // Garden reading (09:30)
+  if(gardenRaw!==''){
+    const gM3=parseFloat(gardenRaw);
+    if(isNaN(gM3)||gM3<0) return showToast('Lectura jardín no válida');
+    const prev=sorted.filter(e=>e.date<dateVal).pop();
+    const prevH=prev?prev._counterHome:baseline;
+    if(gM3<prevH) return showToast(`Lectura (${gM3}) menor que la anterior (${prevH.toFixed(3)})`);
+    const gL=Math.max(0,Math.round((gM3-prevH)*1000));
+
+    if(existing>=0){
+      // Update garden on existing
+      entries[existing]._counterGarden=gM3;
+      entries[existing].garden=gL;
+      if(note) entries[existing].note=note;
+      if(extraL>0) entries[existing].extraL=extraL;
+    } else {
+      // New partial entry (only garden so far)
+      const newE={date:dateVal,garden:gL,home:0,_counterGarden:gM3,_counterHome:gM3,note:note||undefined,extraL:extraL||undefined};
+      entries.push(newE);
+    }
+    se(entries);
+  }
+
+  // Home reading (midnight)
+  if(homeRaw!==''){
+    const hM3=parseFloat(homeRaw);
+    if(isNaN(hM3)||hM3<0) return showToast('Lectura doméstico no válida');
+    const entryIdx=entries.findIndex(e=>e.date===dateVal);
+    if(entryIdx<0) return showToast('Primero guarda la lectura de 09:30');
+    const e=entries[entryIdx];
+    if(hM3<e._counterGarden) return showToast('Lectura medianoche debe ser ≥ lectura 09:30');
+    const hL=Math.max(0,Math.round((hM3-e._counterGarden)*1000));
+    entries[entryIdx]._counterHome=hM3;
+    entries[entryIdx].home=hL;
+    if(note) entries[entryIdx].note=note;
+    if(extraL>0) entries[entryIdx].extraL=extraL;
+    se(entries);
+  }
+
+  // Clear inputs
+  document.getElementById('inp-garden').value='';
+  document.getElementById('inp-home').value='';
+  document.getElementById('inp-note').value='';
+  document.getElementById('inp-extra').value='';
+
+  const hasHome=homeRaw!=='';
+  showToast(hasHome?'Lectura completa guardada ✓':'Lectura 09:30 guardada — añade medianoche más tarde');
+  renderAll();
+}
+
+function deleteEntry(idx){
+  const entries=le();
+  entries.splice(idx,1);
+  se(entries);
+  renderAll();
+  showToast('Registro eliminado');
+}
+
+function clearMonth(){
+  if(!confirm('¿Borrar todos los registros de este mes?')) return;
+  localStorage.removeItem(sk('entries'));
+  renderAll();
+  showToast('Mes borrado');
+}
+
+// JSON
+function exportJSON(){
+  const all={};
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('agua_'))all[k]=localStorage.getItem(k);}
+  dl(JSON.stringify(all,null,2),`control_agua_backup_${new Date().toISOString().slice(0,10)}.json`,'application/json');
+  showToast('JSON exportado ✓');
+}
+
+function importJSON(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!confirm(`¿Importar ${Object.keys(data).length} registros? Sobreescribirá los datos actuales.`)) return;
+      Object.entries(data).forEach(([k,v])=>localStorage.setItem(k,v));
+      renderAll();
+      showToast(`Datos importados ✓`);
+    }catch(err){showToast('Error al leer el archivo JSON');}
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+function exportCSV(){
+  const entries=le();
+  if(entries.length===0) return showToast('No hay datos este mes');
+  const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  let csv=`Control Agua - ${MONTHS[cM]} ${cY}\nFecha;Lect. jardín (m³);Lect. domést. (m³);Jardín (L);Doméstico (L);Total (L);Nota;Riego extra (L)\n`;
+  [...entries].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{
+    csv+=`${e.date};${e._counterGarden?.toFixed(3)||'—'};${e._counterHome?.toFixed(3)||'—'};${e.garden};${e.home};${e.garden+e.home};${e.note||''};${e.extraL||0}\n`;
+  });
+  dl(csv,`agua_${MONTHS[cM]}_${cY}.csv`,'text/csv');
+}
+
+function exportCSVAll(){
+  let csv='Año;Mes;Fecha;Jardín (L);Doméstico (L);Total (L);Nota;Riego extra (L)\n';
+  for(let y=2021;y<=new Date().getFullYear();y++){
+    for(let m=0;m<=11;m++){
+      try{
+        const arr=JSON.parse(localStorage.getItem(`agua_${y}_${String(m+1).padStart(2,'0')}_entries`)||'[]');
+        arr.sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{
+          csv+=`${y};${m+1};${e.date};${e.garden};${e.home};${e.garden+e.home};${e.note||''};${e.extraL||0}\n`;
+        });
+      }catch(e){}
+    }
+  }
+  dl(csv,`agua_historico_${new Date().getFullYear()}.csv`,'text/csv');
+  showToast('CSV histórico ✓');
+}
+
+function dl(content,filename,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=filename; a.click();
+}
+
+f
